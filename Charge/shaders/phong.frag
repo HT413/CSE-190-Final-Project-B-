@@ -19,8 +19,6 @@ uniform vec3 diffuse;
 uniform vec3 specular;
 uniform float shininess;
 
-uniform int useMask;
-
 // Outputs
 out vec4 fragColor;
 
@@ -43,10 +41,5 @@ void main(){
 		// Specular component
 		output += (specular * lightCol * pow(max(dot(normal, halfVec), 0.0), shininess));
 	}
-	output.y /= 2.0;
-	if(useMask == 1){
-		fragColor = vec4(output, 1.0);
-	} else{
-		fragColor = vec4(output, 0.0);
-	}
+	fragColor = vec4(output, 1.0);
 }

@@ -6,7 +6,7 @@ bool isGameOver = false;
 const GLfloat texCoords[12] = {0.f, 1.f, 1.f, 1.f, 1.f, 0.f,
 							   0.f, 1.f, 1.f, 0.f, 0.f, 0.f};
 
-UI_Bar::UI_Bar(bool s)
+UI_Bar::UI_Bar(bool s, bool l)
 {
 	glGenVertexArrays(1, &VAO);
 	glGenVertexArrays(2, rectVAO);
@@ -14,8 +14,12 @@ UI_Bar::UI_Bar(bool s)
 	glGenBuffers(2, rectVBO);
 	
 	isSelfUI = s;
-	GLfloat uiRect[12] = {-1.f, s? -1.f : .92f, 1.f, s? -1.f : .92f, 1.f, s? -.86f : 1.f,
-		                  -1.f, s? -1.f : .92f, 1.f, s? -.86f : 1.f, -1.f, s? -.86f : 1.f};
+	GLfloat uiRect[12] = {l? -.73f : -.67f, s? -1.f : .62f, 
+		l? .67f : .73f, s? -1.f : .62f, 
+		l ? .67f : .73f, s? -.56f : 1.f,
+		l? -.73f : -.67f, s? -1.f : .62f, 
+		l ? .67f : .73f, s? -.56f : 1.f, 
+		l? -.73f : -.67f, s? -.56f : 1.f};
 
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
@@ -30,8 +34,12 @@ UI_Bar::UI_Bar(bool s)
 
 	glBindVertexArray(0);
 
-	GLfloat hpRect[12] = {0.f, s? -.93f : .92f, 1.f, s? -.93f : .92f, 1.f, s? -.87f : 1.f,
-		                  0.f, s? -.93f : .92f, 1.f, s? -.87f : 1.f, 0.f, s? -.87f : 1.f};
+	GLfloat hpRect[12] = {l? -.03f : .03f, s? -.63f : .62f, 
+		l ? .67f : .73f, s? -.63f : .62f, 
+		l ? .67f : .73f, s? -.57f : 1.f,
+		l ? -.03f : .03f, s? -.63f : .62f, 
+		l ? .67f : .73f, s? -.57f : 1.f,
+		l ? -.03f : .03f, s? -.57f : 1.f};
 
 	glBindVertexArray(rectVAO[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, rectVBO[0]);
@@ -41,8 +49,12 @@ UI_Bar::UI_Bar(bool s)
 	glBindVertexArray(0);
 
 	if(s){
-		GLfloat nrgRect[12] ={0.f, -.99f, 1.f, -.99f , 1.f, -.93f,
-			                  0.f, -.99f, 1.f, -.93f, 0.f, -.93f};
+		GLfloat nrgRect[12] ={ l ? -.03f : .03f, -.69f, 
+			l? .67f : .73f, -.69f , 
+			l ? .67f : .73f, -.63f,
+			l ? -.03f : .03f, -.69f, 
+			l ? .67f : .73f, -.63f,
+			l ? -.03f : .03f, -.63f};
 
 		glBindVertexArray(rectVAO[1]);
 		glBindBuffer(GL_ARRAY_BUFFER, rectVBO[1]);
@@ -104,7 +116,7 @@ void UI_Bar::draw(GLuint uiShader, GLuint rectShader){
 	}
 }
 
-void UI_Bar::update(float selfHP, float selfNRG, float foeHP){
+void UI_Bar::update(float selfHP, float selfNRG, float foeHP, bool l){
 	if(selfHP < 0){
 		selfHP = 0;
 		isGameOver = true;
@@ -116,16 +128,24 @@ void UI_Bar::update(float selfHP, float selfNRG, float foeHP){
 		cout << "Game over! You win!" << endl;
 	}
 	if(isSelfUI){
-		GLfloat hpRect[12] = { 0.f, -.93f , selfHP, -.93f, selfHP, -.87f,
-			                   0.f, -.93f, selfHP, -.87f, 0.f, -.87f};
+		GLfloat hpRect[12] = { l ? -.03f : .03f, -.63f,
+			(l? -.03f : .03f) + selfHP * .7f, -.63f, 
+			(l ? -.03f : .03f) + selfHP * .7f, -.57f,
+			l ? -.03f : .03f, -.63f, 
+			(l ? -.03f : .03f) + selfHP * .7f, -.57f,
+			l ? -.03f : .03f, -.57f};
 
 		glBindVertexArray(rectVAO[0]);
 		glBindBuffer(GL_ARRAY_BUFFER, rectVBO[0]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(hpRect), hpRect, GL_STATIC_DRAW);
 		glBindVertexArray(0);
 
-		GLfloat nrgRect[12] ={ 0.f, -.99f, selfNRG, -.99f , selfNRG, -.93f,
-			                   0.f, -.99f, selfNRG, -.93f, 0.f, -.93f};
+		GLfloat nrgRect[12] ={ l ? -.03f : .03f, -.69f, 
+			(l ? -.03f : .03f) + selfNRG * .7f, -.69f ,
+			(l ? -.03f : .03f) + selfNRG * .7f, -.63f,
+			l ? -.03f : .03f, -.69f,
+			(l ? -.03f : .03f) + selfNRG * .7f, -.63f,
+			l ? -.03f : .03f, -.63f};
 
 		glBindVertexArray(rectVAO[1]);
 		glBindBuffer(GL_ARRAY_BUFFER, rectVBO[1]);
@@ -133,8 +153,12 @@ void UI_Bar::update(float selfHP, float selfNRG, float foeHP){
 		glBindVertexArray(0);
 	}
 	else{
-		GLfloat hpRect[12] ={ 0.f, .92f, foeHP, .92f, foeHP, 1.f,
-							  0.f, .92f, foeHP, 1.f, 0.f, 1.f};
+		GLfloat hpRect[12] ={ l ? -.03f : .03f, .62f, 
+			(l ? -.03f : .03f) + foeHP * .7f, .62f,
+			(l ? -.03f : .03f) + foeHP * .7f, 1.f,
+			l ? -.03f : .03f, .62f, 
+			(l ? -.03f : .03f) + foeHP * .7f, 1.f,
+			l ? -.03f : .03f, 1.f};
 
 		glBindVertexArray(rectVAO[0]);
 		glBindBuffer(GL_ARRAY_BUFFER, rectVBO[0]);

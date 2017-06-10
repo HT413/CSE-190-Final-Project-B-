@@ -37,7 +37,7 @@ Soldier::Soldier(OBJObject* o) : Actor(o){
 	type = a_Soldier;
 	maxHealth = health = 270.0;
 	damage = 80.0;
-	actionTime = 1.2;
+	actionTime = 1.6;
 	range = 0.5;
 }
 
@@ -79,7 +79,7 @@ void Soldier::move(){
 	Actor *collideAgainst = 0;
 	if(shouldMove){
 		double currTime = glfwGetTime();
-		position.z += ((id > 0)? -1.8f : 1.8f) * (currTime - lastTime);
+		position.z += ((id < 0)? -1.8f : 1.8f) * (currTime - lastTime);
 		lastTime = currTime;
 		// Check which opponent (if any) are in this unit's hit range
 		for(Actor *a : (id > 0)? foeActors : selfActors){
@@ -95,7 +95,7 @@ void Soldier::move(){
 	}
 	else{
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;
@@ -117,7 +117,7 @@ void Soldier::doAction(){
 	float distance = 10;
 	if(!shouldMove){
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;
@@ -165,10 +165,10 @@ void Tank::move(){
 	Actor *collideAgainst = 0;
 	if(shouldMove){
 		double currTime = glfwGetTime();
-		position.z += ((id > 0)? -1.2f : 1.2f) * (currTime - lastTime);
+		position.z += ((id < 0)? -1.2f : 1.2f) * (currTime - lastTime);
 		lastTime = currTime;
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;
@@ -181,7 +181,7 @@ void Tank::move(){
 	}
 	else{
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;
@@ -203,7 +203,7 @@ void Tank::doAction(){
 	float distance = 10;
 	if(!shouldMove){
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;
@@ -251,10 +251,10 @@ void Cannon::move(){
 	Actor *collideAgainst = 0;
 	if(shouldMove){
 		double currTime = glfwGetTime();
-		position.z += ((id > 0)? -.6f : .6f) * (currTime - lastTime);
+		position.z += ((id < 0)? -.6f : .6f) * (currTime - lastTime);
 		lastTime = currTime;
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;
@@ -267,7 +267,7 @@ void Cannon::move(){
 	}
 	else{
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;
@@ -289,7 +289,7 @@ void Cannon::doAction(){
 	float distance = 10;
 	if(!shouldMove){
 		// Check which opponent (if any) are in this unit's hit range
-		for(Actor *a : (id > 0)? foeActors : selfActors){
+		for(Actor *a : (id < 0)? foeActors : selfActors){
 			if(!a->active()) continue;
 			vec3& foePos = a->getPosition();
 			if(fabs(position.x - foePos.x) > .25f && a->getType() != a_Tower) continue;

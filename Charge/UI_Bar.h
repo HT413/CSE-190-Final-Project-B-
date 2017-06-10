@@ -13,11 +13,11 @@ private:
 	GLuint uColor, uSampler;
 
 public:
-	UI_Bar(bool);
+	UI_Bar(bool, bool);
 	~UI_Bar();
 	void fetchUniforms(GLuint uiShader, GLuint rectShader);
 	void draw(GLuint uiShader, GLuint rectShader);
-	void update(float, float, float);
+	void update(float, float, float, bool);
 };
 
 #endif
