@@ -1,6 +1,6 @@
 #include "ClientGame.h"
 #include "Project4.h"
-
+#include <sstream>
 
 ClientGame::ClientGame()
 {
@@ -54,25 +54,39 @@ void ClientGame::update()
 		packet.deserialize(&(network_data[i]));
 		i += sizeof(Packet);
 
+	
 		switch(packet.packet_type) {
-		case RIFT_HAND_LOC:
+		case RIFT_HAND_LOC: 
+		{
+			/* data structures to split string by ',' */
+			std::stringstream ss;
+			std::vector<std::string> handPosValues;
+			std::string split;
+
+
 			char loc[32 * sizeof(Packet)];
 			for (int j = 0; j < 32 * sizeof(Packet); j++) {
 				packet.deserialize(&(network_data[i + j]));
 			}
 			memcpy(loc, network_data + i, 32 * sizeof(Packet));
 
+			ss.str(loc);
+			while (std::getline(ss, split, ',')) {
+				//split contains the coorindates of hand position
+				if (split.length() > 2) {	//ignore the first nonsense characters
+					handPosValues.push_back(split);
+				}
+			}
 
-			// TODO delimit loc by ","
-			// Hand position (x, y, z) are the last 3 values
-
-
-			vec3 theHandPosition; // Store it here
-			// Print out hand position
+			vec3 theHandPosition; 
+			theHandPosition.x = std::stof(handPosValues[0]);	//stof converts string to float
+			theHandPosition.y = std::stof(handPosValues[1]);
+			theHandPosition.z = std::stof(handPosValues[2]);
+			cout << theHandPosition.x  << " " << theHandPosition.y << " " <<theHandPosition.z<<endl;
 
 			i += 32 * sizeof(Packet);
 			break;
-
+		}
 		case GAME_START_NOTICE:
 			gameStart = !gameStart;
 			printf("Opponent found! Game now starting!\n");
