@@ -5,7 +5,7 @@
 #include "UI_Bar.h"
 #include "Actor.h"
 #include "Shader.hpp"
-
+#include "Sphere.h"
 
 #include "ServerGame.h"
 #include "ClientGame.h"
@@ -70,6 +70,13 @@ vec3 castleDiffuse = vec3(.67f, .84f, .15f);
 vec3 castleSpecular = vec3(.75f, .90f, .20f);
 float castleShininess = 3.f;
 
+Material *sphere_Green;
+vec3 sphereAmbient = vec3(.05f, .29f, .08f);
+vec3 sphereDiffuse = vec3(.14f, .93f, .22f);
+vec3 sphereSpecular = vec3(.10f, .96f, .15f);
+float sphereShininess = 3.f;
+
+
 // For the ground
 vec3 groundColor = vec3(.6f, .6f, .6f);
 Plane *ground;
@@ -88,6 +95,9 @@ double lastTime;
 
 // OBJ models
 OBJObject* soldierObj, *tankObj, *wallObj, *cannonObj, *castleObj;
+
+// For the hand
+Sphere *handSphere;
 
 // OVR input related
 ovrInputState inputState;
@@ -152,6 +162,10 @@ void Project4::initGl() {
 	castle_Sand = new RegMaterial();
 	((RegMaterial*)castle_Sand)->setMaterial(castleAmbient, castleDiffuse, castleSpecular, castleShininess);
 	castle_Sand->getUniformLocs(phongShader);
+
+	sphere_Green = new RegMaterial();
+	((RegMaterial*)sphere_Green)->setMaterial(sphereAmbient, sphereDiffuse, sphereSpecular, sphereShininess);
+	sphere_Green->getUniformLocs(phongShader);
 
 	soldierObj->setMaterial(soldier_Navy);
 	soldierObj->setModel(translate(mat4(1.f), vec3(0, -.15f, 0)) * scale(mat4(1.f), vec3(1.2f, .7f, 1.f)));
@@ -237,6 +251,11 @@ void Project4::initGl() {
 	selfUIR->fetchUniforms(uiShader, uiRectShader);
 	foeUIR->fetchUniforms(uiShader, uiRectShader);
 
+	// The hand sphere
+	glUseProgram(phongShader);
+	handSphere = new Sphere(20, 20);
+	handSphere->setMaterial(sphere_Green);
+
 	// Misc initializations
 	touchInputReceived = false;
 
@@ -253,6 +272,7 @@ void Project4::shutdownGl() {
 	if (wallObj) delete wallObj;
 	if (castleObj) delete castleObj;
 	if (tank_Green) delete tank_Green;
+	if (sphere_Green) delete sphere_Green;
 	if (wall_Brown) delete wall_Brown;
 	if (soldier_Navy) delete soldier_Navy;
 	if (cannon_Dark) delete cannon_Dark;
@@ -297,6 +317,8 @@ void Project4::update(mat4 left, mat4 right) {
 	handPose = trackState.HandPoses[ovrHand_Right].ThePose;
 	
 	vec3 handPos = ovr::toGlm(handPose.Position);
+	cout << "Update hand" << endl;
+	handSphere->setModel(translate(mat4(1.f), handPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
 
 	// Check for any Touch input
 	if (OVR_SUCCESS(ovr_GetInputState(_session, ovrControllerType_Touch, &inputState))) {
@@ -358,6 +380,7 @@ void Project4::renderScene(const mat4& projection, const mat4& headPose, ovrEyeT
 		a->draw(objShader);
 	for (Actor *b : foeActors)
 		b->draw(objShader);
+	handSphere->draw(objShader);
 }
 
 void Project4::draw() {

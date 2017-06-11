@@ -153,6 +153,7 @@
     <ClInclude Include="ClientGame.h" />
     <ClInclude Include="ClientNetwork.h" />
     <ClInclude Include="Globals.h" />
+    <ClInclude Include="Sphere.h" />
     <ClInclude Include="NetworkData.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="Materials.h" />
@@ -180,6 +181,7 @@
     <ClCompile Include="ServerGame.cpp" />
     <ClCompile Include="ServerNetwork.cpp" />
     <ClCompile Include="Skybox.cpp" />
+    <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="UI_Bar.cpp" />
   </ItemGroup>
