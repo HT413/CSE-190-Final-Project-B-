@@ -18,15 +18,12 @@ ClientGame * client;
 void serverLoop(void *);
 void clientLoop();
 
-void serverLoop(void * arg)
+void serverLoop(void *)
 {
-	while (true)
-		server->update();
 }
 
 void clientLoop()
 {
-	while (true) {}
 }
 
 // For shader programs
@@ -95,6 +92,7 @@ double lastTime;
 
 // OBJ models
 OBJObject* soldierObj, *tankObj, *wallObj, *cannonObj, *castleObj;
+Actor* pickedUp;
 
 // For the hand
 Sphere *handSphere;
@@ -103,6 +101,12 @@ Sphere *handSphere;
 ovrInputState inputState;
 bool touchInputReceived;
 ovrPosef handPose;
+
+
+// Other variables
+bool gameStart;
+double lastUpdateTime;
+bool wasPickup;
 
 void Project4::initGl() {
 	RiftApp::initGl();
@@ -200,35 +204,8 @@ void Project4::initGl() {
 	a2->togglePlacing();
 	foeActors.push_back(a2);
 
-	// Test actors
-	Actor *test = new Soldier(soldierObj);
-	objCount++;
-	test->setID(-objCount);
-	test->setPosition(-.1, 0, 0);
-	test->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-	test->toggleActive();
-	test->togglePlacing();
-	selfActors.push_back(test);
-	
-	Actor *test3 = new Soldier(soldierObj);
-	objCount++;
-	test3->setID(-objCount);
-	test3->setPosition(0.1, 0, 0);
-	test3->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-	test3->toggleActive();
-	test3->togglePlacing();
-	selfActors.push_back(test3);
-
-	Actor *test2 = new Tank(tankObj);
-	objCount++;
-	test2->setID(objCount);
-	test2->setPosition(0, 0, -10);
-	test2->toggleActive();
-	test2->togglePlacing();
-	foeActors.push_back(test2);
-	
 	selfNRG = 0.f;
-	lastTime = glfwGetTime();
+	lastUpdateTime = lastTime = glfwGetTime();
 
 	// Create the ground
 	texShader = LoadShaders("shaders/texture.vert", "shaders/texture.frag");
@@ -261,8 +238,9 @@ void Project4::initGl() {
 
 	// Start the server and client
 	server = new ServerGame();
-	_beginthread(serverLoop, 0, (void*)12);
 	client = new ClientGame();
+	gameStart = true;
+	wasPickup = false;
 }
 
 void Project4::shutdownGl() {
@@ -288,76 +266,229 @@ void Project4::shutdownGl() {
 	foeActors.clear();
 
 	// Kill the server and client
-	delete server;
-	delete client;
+	if(server) delete server;
+	if(client) delete client;
 }
 
 void Project4::update(mat4 left, mat4 right) {
-	// Update the game objects
-	if (isGameOver) return;
-	double currTime = glfwGetTime();
-	selfNRG += .045f * float(currTime - lastTime);
-	lastTime = currTime;
-	if (selfNRG > 1.f)
-		selfNRG = 1.f;
-	for (Actor *a : selfActors) {
-		a->update();
-	}
-	for (Actor *b : foeActors) {
-		b->update();
-	}
-	selfUIL->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), true);
-	foeUIL->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), true);
-	selfUIR->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), false);
-	foeUIR->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), false);
-
-	// Now check for inputs
 	double displayMidpointSeconds = ovr_GetPredictedDisplayTime(_session, frame);
 	ovrTrackingState trackState = ovr_GetTrackingState(_session, displayMidpointSeconds, ovrTrue);
 	handPose = trackState.HandPoses[ovrHand_Right].ThePose;
-	
-	vec3 handPos = ovr::toGlm(handPose.Position);
-	cout << "Update hand" << endl;
-	handSphere->setModel(translate(mat4(1.f), handPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
 
-	// Check for any Touch input
-	if (OVR_SUCCESS(ovr_GetInputState(_session, ovrControllerType_Touch, &inputState))) {
-		// A button
-		if (inputState.Buttons & ovrButton_A) {
-			if (!touchInputReceived) {
-				cout << "A button pressed" << endl;
-				touchInputReceived = true;
-			}
+	vec3 handPos = ovr::toGlm(handPose.Position);
+
+	// Check for server response
+	double currTime = glfwGetTime();
+	if (!gameStart) lastTime = currTime;
+	if (currTime - lastUpdateTime > 0.04) {
+		server->update();
+		if(gameStart)
+			server->sendRiftHandPos(handPos.x, handPos.y, handPos.z);
+		client->update();
+		lastUpdateTime = currTime;
+	}
+
+	// Update the game objects
+	if (isGameOver) return;
+	if (gameStart) {
+		selfNRG += .045f * float(currTime - lastTime);
+		lastTime = currTime;
+		if (selfNRG > 1.f)
+			selfNRG = 1.f;
+		for (Actor *a : selfActors) {
+			a->update();
 		}
-		// B button
-		else if (inputState.Buttons & ovrButton_B) {
-			if (!touchInputReceived) {
-				cout << "B button pressed" << endl;
-				touchInputReceived = true;
-			}
+		for (Actor *b : foeActors) {
+			b->update();
 		}
-		// Right thumbstick
-		else if (inputState.Buttons & ovrButton_RThumb) {
-			if (!touchInputReceived) {
-				cout << "Thumb button pressed" << endl;
-				touchInputReceived = true;
-			}
+		selfUIL->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), true);
+		foeUIL->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), true);
+		selfUIR->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), false);
+		foeUIR->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), false);
+
+		// Now check for inputs
+		//cout << "Update hand" << endl;
+		handSphere->setModel(translate(mat4(1.f), handPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
+
+		if (pickedUp) {
+			pickedUp->setPosition(handPos.x, handPos.y, handPos.z);
 		}
-		// Right shoulder button
-		else if (inputState.HandTrigger[ovrHand_Right] > .5f) {
-			if (!touchInputReceived) {
-				cout << "Shoulder button pressed" << endl;
-				touchInputReceived = true;
+
+		// Check for any Touch input
+		if (OVR_SUCCESS(ovr_GetInputState(_session, ovrControllerType_Touch, &inputState))) {
+			// A button
+			if (inputState.Buttons & ovrButton_A) {
+				if (!touchInputReceived) {
+					cout << "A button pressed" << endl;
+					touchInputReceived = true;
+					// Check if we are currently holding an actor
+					if (pickedUp) {
+						if (pickedUp->getType() == a_Soldier || wasPickup) {
+							pickedUp->setPosition(handPos.x, 0, handPos.z);
+							pickedUp->togglePlacing();
+							pickedUp->toggleActive();
+							pickedUp = 0;
+							wasPickup = false;
+						}
+						else {
+							size_t actorsSize = selfActors.size();
+							Actor *oldChoice = selfActors.at(actorsSize - 1);
+							delete(oldChoice);
+							pickedUp = new Soldier(soldierObj);
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors[actorsSize - 1] = pickedUp;
+						}
+					}
+					else {
+						pickedUp = new Soldier(soldierObj);
+						objCount++;
+						pickedUp->setID(-objCount);
+						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+						selfActors.push_back(pickedUp);
+					}
+				}
 			}
-		}
-		else if (inputState.IndexTrigger[ovrHand_Right] > .5f) {
-			if (!touchInputReceived) {
-				cout << "Trigger pressed" << endl;
-				touchInputReceived = true;
+			// B button
+			else if (inputState.Buttons & ovrButton_B) {
+				if (!touchInputReceived) {
+					cout << "B button pressed" << endl;
+					touchInputReceived = true;
+					// Check if we are currently holding an actor
+					if (pickedUp) {
+						if (pickedUp->getType() == a_Tank || wasPickup) {
+							pickedUp->setPosition(handPos.x, 0, handPos.z);
+							pickedUp->togglePlacing();
+							pickedUp->toggleActive();
+							pickedUp = 0;
+							wasPickup = false;
+						}
+						else {
+							size_t actorsSize = selfActors.size();
+							Actor *oldChoice = selfActors.at(actorsSize - 1);
+							delete(oldChoice);
+							pickedUp = new Tank(tankObj);
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors[actorsSize - 1] = pickedUp;
+						}
+					}
+					else {
+						pickedUp = new Tank(tankObj);
+						objCount++;
+						pickedUp->setID(-objCount);
+						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+						selfActors.push_back(pickedUp);
+					}
+				}
 			}
-		}
-		else {
-			touchInputReceived = false;
+			// Right thumbstick
+			else if (inputState.Buttons & ovrButton_RThumb) {
+				if (!touchInputReceived) {
+					cout << "Thumb button pressed" << endl;
+					touchInputReceived = true;
+					// Check if we are currently holding an actor
+					if (pickedUp) {
+						pickedUp->setPosition(handPos.x, 0, handPos.z);
+						pickedUp->togglePlacing();
+						pickedUp->toggleActive();
+						pickedUp = 0;
+						wasPickup = false;
+					}
+					// No actor picked up, check if we selected one instead
+					else {
+						for (Actor *a : selfActors) {
+							if (a->getType() == a_Tower) continue;
+							if (length(a->getPosition() - handPos) < .5f) {
+								pickedUp = a;
+								break;
+							}
+						}
+						if (!pickedUp) {
+							for (Actor *a : foeActors) {
+								if (a->getType() == a_Tower) continue;
+								if (length(a->getPosition() - handPos) < .5f) {
+									pickedUp = a;
+									break;
+								}
+							}
+						}
+						if (pickedUp) {
+							pickedUp->toggleActive();
+							pickedUp->togglePlacing();
+							wasPickup = true;
+						}
+					}
+				}
+			}
+			// Right shoulder button
+			else if (inputState.HandTrigger[ovrHand_Right] > .7f) {
+				if (!touchInputReceived) {
+					cout << "Shoulder button pressed" << endl;
+					touchInputReceived = true;
+					// Check if we are currently holding an actor
+					if (pickedUp) {
+						if (pickedUp->getType() == a_Cannon || wasPickup) {
+							pickedUp->setPosition(handPos.x, 0, handPos.z);
+							pickedUp->togglePlacing();
+							pickedUp->toggleActive();
+							pickedUp = 0;
+							wasPickup = false;
+						}
+						else {
+							size_t actorsSize = selfActors.size();
+							Actor *oldChoice = selfActors.at(actorsSize - 1);
+							delete(oldChoice);
+							pickedUp = new Cannon(cannonObj);
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors[actorsSize - 1] = pickedUp;
+						}
+					}
+					else {
+						pickedUp = new Cannon(cannonObj);
+						objCount++;
+						pickedUp->setID(-objCount);
+						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+						selfActors.push_back(pickedUp);
+					}
+				}
+			}
+			else if (inputState.IndexTrigger[ovrHand_Right] > .7f) {
+				if (!touchInputReceived) {
+					cout << "Trigger pressed" << endl;
+					touchInputReceived = true;
+					// Check if we are currently holding an actor
+					if (pickedUp) {
+						if (pickedUp->getType() == a_Wall || wasPickup) {
+							pickedUp->setPosition(handPos.x, 0, handPos.z);
+							pickedUp->togglePlacing();
+							pickedUp->toggleActive();
+							pickedUp = 0;
+							wasPickup = false;
+						}
+						else {
+							size_t actorsSize = selfActors.size();
+							Actor *oldChoice = selfActors.at(actorsSize - 1);
+							delete(oldChoice);
+							pickedUp = new Wall(wallObj);
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors[actorsSize - 1] = pickedUp;
+						}
+					}
+					else {
+						pickedUp = new Wall(wallObj);
+						objCount++;
+						pickedUp->setID(-objCount);
+						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+						selfActors.push_back(pickedUp);
+					}
+				}
+			}
+			else {
+				touchInputReceived = false;
+			}
 		}
 	}
 }

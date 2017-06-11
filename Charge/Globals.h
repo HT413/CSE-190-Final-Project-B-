@@ -41,5 +41,6 @@ void glDebugCallbackHandler(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLcha
 
 extern int objCount;
 extern bool isGameOver;
+extern bool gameStart;
 
 #endif

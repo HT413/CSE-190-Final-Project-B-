@@ -1,4 +1,5 @@
 #include "ClientGame.h"
+#include "Project4.h"
 
 
 ClientGame::ClientGame()
@@ -54,19 +55,36 @@ void ClientGame::update()
 		i += sizeof(Packet);
 
 		switch(packet.packet_type) {
+		case RIFT_HAND_LOC:
+			char loc[32 * sizeof(Packet)];
+			for (int j = 0; j < 32 * sizeof(Packet); j++) {
+				packet.deserialize(&(network_data[i + j]));
+			}
+			memcpy(loc, network_data + i, 32 * sizeof(Packet));
+
+
+			// TODO delimit loc by ","
+			// Hand position (x, y, z) are the last 3 values
+
+
+			vec3 theHandPosition; // Store it here
+			// Print out hand position
+
+			i += 32 * sizeof(Packet);
+			break;
+
+		case GAME_START_NOTICE:
+			gameStart = !gameStart;
+			printf("Opponent found! Game now starting!\n");
+			break;
 
 		case ACTION_EVENT:
-
-			printf("client received action event packet from server\n");
-
-			sendActionPackets();
-
+			printf("Server ping was successful!\n");
+			//sendActionPackets();
 			break;
 
 		default:
-
-			printf("error in packet types\n");
-
+			//printf("Error in packet types\n");
 			break;
 		}
 	}

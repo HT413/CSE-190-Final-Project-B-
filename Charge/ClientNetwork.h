@@ -10,7 +10,9 @@
 #include "NetworkData.h"
 
 // size of our buffer
-#define DEFAULT_BUFLEN 512
+#define DEFAULT_BUFLEN 
+// Server IP address
+#define SERVER_IP "128.54.70.64"
 // port to connect sockets through 
 #define DEFAULT_PORT "6881"
 // Need to link with Ws2_32.lib, Mswsock.lib, and Advapi32.lib
