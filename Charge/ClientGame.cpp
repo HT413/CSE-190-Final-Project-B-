@@ -26,7 +26,10 @@ ClientGame::~ClientGame()
 void ClientGame::sendHandPos(float x, float y, float z) {
 	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
-	ss << "ZZ" << "," << x << "," << y << "," << z;
+	float theX = -x;
+	float theZ = -z;
+	theZ -= 5.f;
+	ss << "ZZ" << "," << theX << "," << y << "," << theZ;
 	const char * str = ss.str().c_str();
 	char packet_data[packet_size];
 	strcpy(packet_data + 4, str);
@@ -172,7 +175,7 @@ void ClientGame::update()
 			break;
 
 		default:
-			printf("Error in packet types\n");
+			//printf("Error in packet types\n");
 			break;
 		}
 	}

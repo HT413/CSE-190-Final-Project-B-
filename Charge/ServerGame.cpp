@@ -63,26 +63,35 @@ void ServerGame::receiveFromClients()
 				std::vector<std::string> unitValues;
 				std::string split;
 
+		
 
 				char unitInfo[32 * sizeof(Packet)];
 				for (int j = 0; j < 32 * sizeof(Packet); j++) {
 					packet.deserialize(&(network_data[i + j]));
 				}
+				
 				memcpy(unitInfo, network_data + i, 32 * sizeof(Packet));
-
+			
 				ss.str(unitInfo);
 				while (std::getline(ss, split, ',')) {
 					//split contains the coorindates of hand position
 					if (split.length() > 1) {	//ignore the first nonsense characters
 						unitValues.push_back(split);
+						cout << split << " "<<endl;
 					}
 				}
+			
+
+
 				if (unitValues.size() > 1) {
-					ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(int(stof(unitValues[0])));
-					int unitID = int(stof(unitValues[1]));
+					ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(int(stof(unitValues[1])));
+					int unitID = int(stof(unitValues[2]));
 
 					cout << "New unit is " << unitType << " of ID " << unitID << endl;
 				}
+
+				cout << "WE HERE BOIS";
+				getchar();
 
 				i += 16 * sizeof(Packet);
 				break;
@@ -154,7 +163,7 @@ void ServerGame::receiveFromClients()
 					}
 
 					i += 32 * sizeof(Packet);
-					//cout << "Received rift hand pos: " << theHandPosition.x << ", " << theHandPosition.y << ", " << theHandPosition.z << endl;
+					sendRiftHandPos(theHandPosition.x, theHandPosition.y, theHandPosition.z);
 					break;
 				}
 

@@ -262,6 +262,7 @@ void Project4::shutdownGl() {
 	if (castleObj) delete castleObj;
 	if (tank_Green) delete tank_Green;
 	if (sphere_Green) delete sphere_Green;
+	if (sphere_Blue) delete sphere_Blue;
 	if (wall_Brown) delete wall_Brown;
 	if (soldier_Navy) delete soldier_Navy;
 	if (cannon_Dark) delete cannon_Dark;
@@ -273,6 +274,8 @@ void Project4::shutdownGl() {
 	if (foeUIL) delete foeUIL;
 	if (selfUIR) delete selfUIR;
 	if (foeUIR) delete foeUIR;
+	if (handSphere) delete handSphere;
+	if (leapSphere) delete leapSphere;
 	selfActors.clear();
 	foeActors.clear();
 
@@ -324,7 +327,6 @@ void Project4::update(mat4 left, mat4 right) {
 		// Now check for inputs
 		//cout << "Update hand" << endl;
 		handSphere->setModel(translate(mat4(1.f), handPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
-		cout << "Received leap hand pos: " << leapHandPos.x << ", " << leapHandPos.y << ", " << leapHandPos.z << endl;
 		leapSphere->setModel(translate(mat4(1.f), leapHandPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
 
 		if (pickedUp) {
