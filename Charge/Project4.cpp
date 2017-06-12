@@ -668,6 +668,15 @@ void Project4::renderScene(const mat4& projection, const mat4& headPose, ovrEyeT
 		b->draw(objShader);
 	handSphere->draw(objShader);
 	leapSphere->draw(objShader);
+
+	if (eye == ovrEye_Left) {
+		selfUIL->draw(uiShader, uiRectShader);
+		foeUIL->draw(uiShader, uiRectShader);
+	}
+	else {
+		selfUIR->draw(uiShader, uiRectShader);
+		foeUIR->draw(uiShader, uiRectShader);
+	}
 }
 
 void Project4::draw() {

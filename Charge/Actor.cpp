@@ -79,7 +79,7 @@ void Soldier::move(){
 	if(!isActive) lastTime = currTime;
 	Actor *collideAgainst = 0;
 	if(shouldMove){
-		position.z += ((id < 0)? -1.8f : 1.8f) * (currTime - lastTime);
+		position.z += ((id < 0)? -3.6 : 3.6) * (currTime - lastTime);
 		lastTime = currTime;
 		// Check which opponent (if any) are in this unit's hit range
 		for(Actor *a : (id > 0)? foeActors : selfActors){
