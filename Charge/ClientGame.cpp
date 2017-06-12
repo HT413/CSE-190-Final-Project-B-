@@ -42,7 +42,7 @@ void ClientGame::sendHandPos(float x, float y, float z) {
 }
 
 void ClientGame::sendUnitCreation(float type, float id) {
-	const unsigned int packet_size = 32 * sizeof(Packet);
+	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
 	ss << "ZZ" << "," << type << "," << id;
 	
@@ -56,6 +56,38 @@ void ClientGame::sendUnitCreation(float type, float id) {
 	packet.packet_type = RIFT_UNIT_CREATION;
 
 	packet.serialize(packet_data);
+	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
+}
+
+void ClientGame::sendUnitPickup(float id) {
+	const unsigned int packet_size = 17 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << id;
+
+	char* cstr = new char[packet_size];
+	std::strcpy(cstr, ss.str().c_str());
+
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, cstr);
+
+	Packet packet;
+	packet.packet_type = RIFT_UNIT_PICK_UP;
+
+	packet.serialize(packet_data);
+	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
+}
+
+void ClientGame::sendUnitPlaced()
+{
+	// send action packet
+	const unsigned int packet_size = sizeof(Packet);
+	char packet_data[packet_size];
+
+	Packet packet;
+	packet.packet_type = RIFT_UNIT_PLACED_DOWN;
+
+	packet.serialize(packet_data);
+
 	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
 }
 
@@ -92,6 +124,56 @@ void ClientGame::update()
 
 	
 		switch(packet.packet_type) {
+		case RIFT_UNIT_PLACED_DOWN:
+		{
+			// Ignore this data
+			break;
+		}
+
+		case RIFT_UNIT_PICK_UP:
+		{
+			// Ignore this data
+			break;
+		}
+
+		case LEAP_UNIT_PLACED_DOWN:
+		{
+			unitPlacedown();
+			break;
+		}
+
+		case LEAP_UNIT_PICK_UP:
+		{
+			std::stringstream ss;
+			std::vector<std::string> unitValues;
+			std::string split;
+
+			char unitInfo[16 * sizeof(Packet)];
+			for (int j = 0; j < 16 * sizeof(Packet); j++) {
+				packet.deserialize(&(network_data[i + j]));
+			}
+
+			memcpy(unitInfo, network_data + i, 16 * sizeof(Packet));
+
+			ss.str(unitInfo);
+			while (std::getline(ss, split, ',')) {
+				if (split.length() > 1) {	//ignore the first nonsense characters
+					unitValues.push_back(split);
+				}
+			}
+
+
+
+			if (unitValues.size() > 1) {
+				int unitID = int(stof(unitValues[1]));
+				unitPickup(unitID);
+			}
+
+			i += 16 * sizeof(Packet);
+
+			break;
+		}
+
 		case LEAP_UNIT_CREATION:
 		{
 			std::stringstream ss;
@@ -121,7 +203,6 @@ void ClientGame::update()
 				ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(int(stof(unitValues[1])));
 				int unitID = int(stof(unitValues[2]));
 				createNewUnit(unitType, unitID);
-				cout << "New unit is " << unitType << " of ID " << unitID << endl;
 			}
 
 			i += 32 * sizeof(Packet);

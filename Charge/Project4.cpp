@@ -28,7 +28,7 @@ void clientLoop()
 
 // For shader programs
 GLuint phongShader, objShader, texShader;
-GLuint uiShader, uiRectShader;
+GLuint uiShader, uiRectShader, unitHPShader;
 
 // Light properties
 const int MAX_LIGHTS = 8;
@@ -112,6 +112,7 @@ vec3 leapHandPos = vec3(0, -1, 0);
 bool gameStart;
 double lastUpdateTime;
 bool wasPickup;
+int objPickup;
 
 void Project4::initGl() {
 	RiftApp::initGl();
@@ -237,7 +238,10 @@ void Project4::initGl() {
 	selfUIR->fetchUniforms(uiShader, uiRectShader);
 	foeUIR->fetchUniforms(uiShader, uiRectShader);
 
-	// The hand sphere
+	// Shaders for the unit HP bars
+	unitHPShader = LoadShaders("shaders/unithp.vert", "shaders/unithp.frag");
+
+	// The hand spheres
 	glUseProgram(phongShader);
 	handSphere = new Sphere(20, 20);
 	handSphere->setMaterial(sphere_Green);
@@ -246,6 +250,7 @@ void Project4::initGl() {
 
 	// Misc initializations
 	touchInputReceived = false;
+	objPickup = 0;
 
 	// Start the server and client
 	server = new ServerGame();
@@ -286,6 +291,30 @@ void Project4::shutdownGl() {
 
 void updateLeapPos(vec3 p) {
 	leapHandPos = p;
+}
+
+void unitPickup(int id) {
+	objPickup = id;
+	if (id > 0) {
+		foeActors[id - 2]->toggleActive();
+		foeActors[id - 2]->togglePlacing();
+	}
+	else {
+		foeActors[-2 - id]->toggleActive();
+		foeActors[-2 - id]->togglePlacing();
+	}
+}
+
+void unitPlacedown() {
+	if (objPickup > 0) {
+		foeActors[objPickup - 2]->toggleActive();
+		foeActors[objPickup - 2]->togglePlacing();
+	}
+	else {
+		foeActors[-2 - objPickup]->toggleActive();
+		foeActors[-2 - objPickup]->togglePlacing();
+	}
+	objPickup = 0;
 }
 
 void createNewUnit(ACTOR_TYPE type, int id) {
@@ -377,6 +406,12 @@ void Project4::update(mat4 left, mat4 right) {
 
 		if (pickedUp) {
 			pickedUp->setPosition(handPos.x, handPos.y, handPos.z);
+		}
+		if (objPickup > 0) {
+			foeActors[objPickup - 2]->setPosition(leapHandPos.x, leapHandPos.y, leapHandPos.z);
+		}
+		else if(objPickup < 0){
+			foeActors[-2 - objPickup]->setPosition(leapHandPos.x, leapHandPos.y, leapHandPos.z);
 		}
 
 		// Check for any Touch input
@@ -504,6 +539,7 @@ void Project4::update(mat4 left, mat4 right) {
 						pickedUp->togglePlacing();
 						pickedUp->toggleActive();
 						pickedUp = 0;
+						client->sendUnitPlaced();
 						wasPickup = false;
 					}
 					// No actor picked up, check if we selected one instead
@@ -527,6 +563,12 @@ void Project4::update(mat4 left, mat4 right) {
 						if (pickedUp) {
 							pickedUp->toggleActive();
 							pickedUp->togglePlacing();
+							float theID;
+							if (pickedUp->getID() > 0)
+								theID = pickedUp->getID() + .1f;
+							else
+								theID = pickedUp->getID() - .1f;
+							client->sendUnitPickup(theID);
 							wasPickup = true;
 						}
 					}
@@ -668,6 +710,14 @@ void Project4::renderScene(const mat4& projection, const mat4& headPose, ovrEyeT
 		b->draw(objShader);
 	handSphere->draw(objShader);
 	leapSphere->draw(objShader);
+
+	glUseProgram(unitHPShader);
+	glUniformMatrix4fv(glGetUniformLocation(unitHPShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
+	glUniformMatrix4fv(glGetUniformLocation(unitHPShader, "view"), 1, GL_FALSE, &(headPose[0][0]));
+	for (Actor *a : selfActors)
+		a->drawHP(unitHPShader);
+	for (Actor *b : foeActors)
+		b->drawHP(unitHPShader);
 
 	if (eye == ovrEye_Left) {
 		selfUIL->draw(uiShader, uiRectShader);

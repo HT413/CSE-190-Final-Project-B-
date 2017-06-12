@@ -16,6 +16,10 @@ public:
 	void receiveFromClients();
 	void sendActionPackets();
 	void notifyStart();
+	void sendLeapUnitPickup(float);
+	void sendRiftUnitPickup(float);
+	void sendLeapPlaceDown();
+	void sendRiftPlaceDown();
 	void sendRiftHandPos(float, float, float);
 	void sentRiftUnitCreation(float, float);
 	void sentLeapUnitCreation(float, float);

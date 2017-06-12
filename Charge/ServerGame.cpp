@@ -54,6 +54,80 @@ void ServerGame::receiveFromClients()
 			i += sizeof(Packet);
 
 			switch (packet.packet_type) {
+			case LEAP_UNIT_PLACED_DOWN:
+			{
+				sendLeapPlaceDown();
+			}
+
+			case RIFT_UNIT_PLACED_DOWN:
+			{
+				sendRiftPlaceDown();
+			}
+
+			case LEAP_UNIT_PICK_UP:
+			{
+				std::stringstream ss;
+				std::vector<std::string> unitValues;
+				std::string split;
+
+				char unitInfo[16 * sizeof(Packet)];
+				for (int j = 0; j < 16 * sizeof(Packet); j++) {
+					packet.deserialize(&(network_data[i + j]));
+				}
+
+				memcpy(unitInfo, network_data + i, 16 * sizeof(Packet));
+
+				ss.str(unitInfo);
+				while (std::getline(ss, split, ',')) {
+					if (split.length() > 1) {	//ignore the first nonsense characters
+						unitValues.push_back(split);
+					}
+				}
+
+
+
+				if (unitValues.size() > 1) {
+					int unitID = int(stof(unitValues[1]));
+					sendLeapUnitPickup((float)unitID + 0.1f);
+				}
+
+				i += 16 * sizeof(Packet);
+
+				break;
+			}
+
+			case RIFT_UNIT_PICK_UP:
+			{
+				std::stringstream ss;
+				std::vector<std::string> unitValues;
+				std::string split;
+
+				char unitInfo[16 * sizeof(Packet)];
+				for (int j = 0; j < 16 * sizeof(Packet); j++) {
+					packet.deserialize(&(network_data[i + j]));
+				}
+
+				memcpy(unitInfo, network_data + i, 16 * sizeof(Packet));
+
+				ss.str(unitInfo);
+				while (std::getline(ss, split, ',')) {
+					if (split.length() > 1) {	//ignore the first nonsense characters
+						unitValues.push_back(split);
+					}
+				}
+
+
+
+				if (unitValues.size() > 1) {
+					int unitID = int(stof(unitValues[1]));
+					sendRiftUnitPickup((float)unitID - 0.1f);
+				}
+
+				i += 16 * sizeof(Packet);
+
+				break;
+			}
+
 			case RIFT_UNIT_CREATION:
 			{
 				std::stringstream ss;
@@ -152,7 +226,6 @@ void ServerGame::receiveFromClients()
 					theHandPosition.x = std::stof(handPosValues[0]);	//stof converts string to float
 					theHandPosition.y = std::stof(handPosValues[1]);
 					theHandPosition.z = std::stof(handPosValues[2]);
-					//cout << "Received leap hand pos: " << theHandPosition.x << ", " << theHandPosition.y << ", " << theHandPosition.z << endl;
 					updateLeapPos(vec3(theHandPosition.x, theHandPosition.y, theHandPosition.z));
 				}
 
@@ -224,6 +297,70 @@ void ServerGame::sendActionPackets()
 	packet.packet_type = ACTION_EVENT;
 
 	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
+void ServerGame::sendLeapUnitPickup(float id)
+{
+	const unsigned int packet_size = 9 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << id;
+
+	char* cstr = new char[packet_size];
+	std::strcpy(cstr, ss.str().c_str());
+
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, cstr);
+
+	Packet packet;
+	packet.packet_type = LEAP_UNIT_PICK_UP;
+
+	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
+void ServerGame::sendRiftUnitPickup(float id)
+{
+	const unsigned int packet_size = 9 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << id;
+
+	char* cstr = new char[packet_size];
+	std::strcpy(cstr, ss.str().c_str());
+
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, cstr);
+
+	Packet packet;
+	packet.packet_type = RIFT_UNIT_PICK_UP;
+
+	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
+void ServerGame::sendLeapPlaceDown() {
+	// send action packet
+	const unsigned int packet_size = sizeof(Packet);
+	char packet_data[packet_size];
+
+	Packet packet;
+	packet.packet_type = LEAP_UNIT_PLACED_DOWN;
+
+	packet.serialize(packet_data);
+
+	network->sendToAll(packet_data, packet_size);
+}
+
+void ServerGame::sendRiftPlaceDown() {
+	// send action packet
+	const unsigned int packet_size = sizeof(Packet);
+	char packet_data[packet_size];
+
+	Packet packet;
+	packet.packet_type = RIFT_UNIT_PLACED_DOWN;
+
+	packet.serialize(packet_data);
+
 	network->sendToAll(packet_data, packet_size);
 }
 
