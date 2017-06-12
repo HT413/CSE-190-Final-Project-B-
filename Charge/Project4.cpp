@@ -73,6 +73,11 @@ vec3 sphereDiffuse = vec3(.14f, .93f, .22f);
 vec3 sphereSpecular = vec3(.10f, .96f, .15f);
 float sphereShininess = 3.f;
 
+Material *sphere_Blue;
+vec3 spherebAmbient = vec3(.05f, .08f, .29f);
+vec3 spherebDiffuse = vec3(.14f, .22f, .93f);
+vec3 spherebSpecular = vec3(.10f, .15f, .96f);
+
 
 // For the ground
 vec3 groundColor = vec3(.6f, .6f, .6f);
@@ -95,13 +100,13 @@ OBJObject* soldierObj, *tankObj, *wallObj, *cannonObj, *castleObj;
 Actor* pickedUp;
 
 // For the hand
-Sphere *handSphere;
+Sphere *handSphere, *leapSphere;
 
 // OVR input related
 ovrInputState inputState;
 bool touchInputReceived;
 ovrPosef handPose;
-
+vec3 leapHandPos = vec3(0, -1, 0);
 
 // Other variables
 bool gameStart;
@@ -171,6 +176,10 @@ void Project4::initGl() {
 	((RegMaterial*)sphere_Green)->setMaterial(sphereAmbient, sphereDiffuse, sphereSpecular, sphereShininess);
 	sphere_Green->getUniformLocs(phongShader);
 
+	sphere_Blue = new RegMaterial();
+	((RegMaterial*)sphere_Blue)->setMaterial(spherebAmbient, spherebDiffuse, spherebSpecular, sphereShininess);
+	sphere_Blue->getUniformLocs(phongShader);
+
 	soldierObj->setMaterial(soldier_Navy);
 	soldierObj->setModel(translate(mat4(1.f), vec3(0, -.15f, 0)) * scale(mat4(1.f), vec3(1.2f, .7f, 1.f)));
 
@@ -232,6 +241,8 @@ void Project4::initGl() {
 	glUseProgram(phongShader);
 	handSphere = new Sphere(20, 20);
 	handSphere->setMaterial(sphere_Green);
+	leapSphere = new Sphere(20, 20);
+	leapSphere->setMaterial(sphere_Blue);
 
 	// Misc initializations
 	touchInputReceived = false;
@@ -270,6 +281,10 @@ void Project4::shutdownGl() {
 	if(client) delete client;
 }
 
+void updateLeapPos(vec3 p) {
+	leapHandPos = p;
+}
+
 void Project4::update(mat4 left, mat4 right) {
 	double displayMidpointSeconds = ovr_GetPredictedDisplayTime(_session, frame);
 	ovrTrackingState trackState = ovr_GetTrackingState(_session, displayMidpointSeconds, ovrTrue);
@@ -283,7 +298,7 @@ void Project4::update(mat4 left, mat4 right) {
 	if (currTime - lastUpdateTime > 0.04) {
 		server->update();
 		if(gameStart)
-			server->sendRiftHandPos(handPos.x, handPos.y, handPos.z);
+			client->sendHandPos(handPos.x, handPos.y, handPos.z);
 		client->update();
 		lastUpdateTime = currTime;
 	}
@@ -309,6 +324,8 @@ void Project4::update(mat4 left, mat4 right) {
 		// Now check for inputs
 		//cout << "Update hand" << endl;
 		handSphere->setModel(translate(mat4(1.f), handPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
+		cout << "Received leap hand pos: " << leapHandPos.x << ", " << leapHandPos.y << ", " << leapHandPos.z << endl;
+		leapSphere->setModel(translate(mat4(1.f), leapHandPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
 
 		if (pickedUp) {
 			pickedUp->setPosition(handPos.x, handPos.y, handPos.z);
@@ -512,6 +529,7 @@ void Project4::renderScene(const mat4& projection, const mat4& headPose, ovrEyeT
 	for (Actor *b : foeActors)
 		b->draw(objShader);
 	handSphere->draw(objShader);
+	leapSphere->draw(objShader);
 }
 
 void Project4::draw() {

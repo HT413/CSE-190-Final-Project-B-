@@ -27,6 +27,7 @@ public:
 	void update();
 	void draw(GLuint);
 	void setActionTime(double t){ actionTime = t; }
+	int getID() { return id; }
 	void setID(int i){ id = i; }
 	virtual void move() = 0;
 	virtual void doAction() = 0;

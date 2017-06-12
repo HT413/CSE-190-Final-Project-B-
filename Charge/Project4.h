@@ -20,4 +20,6 @@ protected:
 	void draw() override;
 };
 
+void updateLeapPos(vec3);
+
 #endif

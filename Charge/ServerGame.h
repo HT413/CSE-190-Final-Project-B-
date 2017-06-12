@@ -4,6 +4,8 @@
 #include "ServerNetwork.h"
 #include "NetworkData.h"
 
+extern enum ACTOR_TYPE;
+
 class ServerGame
 {
 public:

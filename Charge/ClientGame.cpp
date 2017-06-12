@@ -23,6 +23,36 @@ ClientGame::~ClientGame()
 {
 }
 
+void ClientGame::sendHandPos(float x, float y, float z) {
+	const unsigned int packet_size = 33 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << x << "," << y << "," << z;
+	const char * str = ss.str().c_str();
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, str);
+
+	Packet packet;
+	packet.packet_type = RIFT_HAND_LOC;
+
+	packet.serialize(packet_data);
+	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
+}
+
+void ClientGame::sendUnitCreation(ACTOR_TYPE type, int id) {
+	const unsigned int packet_size = 32 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << type << "," << id;
+	const char * str = ss.str().c_str();
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, str);
+
+	Packet packet;
+	packet.packet_type = RIFT_UNIT_CREATION;
+
+	packet.serialize(packet_data);
+	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
+}
+
 void ClientGame::sendActionPackets()
 {
 	// send action packet
@@ -56,7 +86,43 @@ void ClientGame::update()
 
 	
 		switch(packet.packet_type) {
-		case RIFT_HAND_LOC: 
+		case LEAP_UNIT_CREATION:
+		{
+			std::stringstream ss;
+			std::vector<std::string> unitValues;
+			std::string split;
+
+
+			char unitInfo[32 * sizeof(Packet)];
+			for (int j = 0; j < 16 * sizeof(Packet); j++) {
+				packet.deserialize(&(network_data[i + j]));
+			}
+			memcpy(unitInfo, network_data + i, 32 * sizeof(Packet));
+
+			ss.str(unitInfo);
+			while (std::getline(ss, split, ',')) {
+				//split contains the coorindates of hand position
+				if (split.length() > 1) {	//ignore the first nonsense characters
+					unitValues.push_back(split);
+				}
+			}
+
+			ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(stoi(unitValues[0]));
+			int unitID = stoi(unitValues[1]);
+
+			cout << "New unit is " << unitType << " of ID " << unitID << endl;
+
+			i += 32 * sizeof(Packet);
+			break;
+		}
+
+		case RIFT_UNIT_CREATION:
+		{
+			// Ignore this data
+			break;
+		}
+
+		case LEAP_HAND_LOC:
 		{
 			/* data structures to split string by ',' */
 			std::stringstream ss;
@@ -78,27 +144,35 @@ void ClientGame::update()
 				}
 			}
 
-			vec3 theHandPosition; 
+			vec3 theHandPosition;
 			theHandPosition.x = std::stof(handPosValues[0]);	//stof converts string to float
 			theHandPosition.y = std::stof(handPosValues[1]);
 			theHandPosition.z = std::stof(handPosValues[2]);
-			cout << theHandPosition.x  << " " << theHandPosition.y << " " <<theHandPosition.z<<endl;
 
 			i += 32 * sizeof(Packet);
 			break;
 		}
+
+		case RIFT_HAND_LOC: 
+		{
+			// Ignore this data
+			break;
+		}
 		case GAME_START_NOTICE:
-			gameStart = !gameStart;
+			gameStart = true;
 			printf("Opponent found! Game now starting!\n");
 			break;
 
 		case ACTION_EVENT:
-			printf("Server ping was successful!\n");
+			//printf("Server ping was successful!\n");
 			//sendActionPackets();
 			break;
 
+		case INIT_CONNECTION:
+			break;
+
 		default:
-			//printf("Error in packet types\n");
+			printf("Error in packet types\n");
 			break;
 		}
 	}
