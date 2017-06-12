@@ -21,6 +21,7 @@ public:
 	void sendLeapPlaceDown();
 	void sendRiftPlaceDown();
 	void sendRiftHandPos(float, float, float);
+	void sendRiftHeadPos(float, float, float);
 	void sentRiftUnitCreation(float, float);
 	void sentLeapUnitCreation(float, float);
 

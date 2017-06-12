@@ -20,4 +20,18 @@ public:
 	void update(float, float, float, bool);
 };
 
+class UI_Square
+{
+private:
+	GLuint VAO, VBO[2], texID;
+	GLuint uSampler, uView, uProjection, uModel;
+	mat4 model;
+
+public:
+	UI_Square(float, float, int);
+	~UI_Square();
+	void fetchUniforms(GLuint shader);
+	void draw(GLuint shader, mat4&, mat4&);
+};
+
 #endif

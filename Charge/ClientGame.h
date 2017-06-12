@@ -18,6 +18,7 @@ public:
 
 	void sendActionPackets();
 	void sendHandPos(float, float, float);
+	void sendHeadPos(float, float, float);
 	void sendUnitCreation(float, float);
 	void sendUnitPickup(float);
 	void sendUnitPlaced();

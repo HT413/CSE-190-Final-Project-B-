@@ -28,7 +28,7 @@ void clientLoop()
 
 // For shader programs
 GLuint phongShader, objShader, texShader;
-GLuint uiShader, uiRectShader, unitHPShader;
+GLuint skillShader, unitHPShader;
 
 // Light properties
 const int MAX_LIGHTS = 8;
@@ -84,7 +84,7 @@ vec3 groundColor = vec3(.6f, .6f, .6f);
 Plane *ground;
 
 // For the UI
-UI_Bar *selfUIL, *selfUIR, *foeUIL, *foeUIR;
+UI_Square * skillIcons[5];
 
 // Scene objects
 vector<Actor *> selfActors;
@@ -214,7 +214,7 @@ void Project4::initGl() {
 	a2->togglePlacing();
 	foeActors.push_back(a2);
 
-	selfNRG = 0.f;
+	selfNRG = 1.f;
 	lastUpdateTime = lastTime = glfwGetTime();
 
 	// Create the ground
@@ -227,16 +227,13 @@ void Project4::initGl() {
 		* scale(mat4(1), vec3(14, 12, 1)));
 
 	// UI shaders and related components
-	uiShader = LoadShaders("shaders/ui.vert", "shaders/ui.frag");
-	uiRectShader = LoadShaders("shaders/ui_rect.vert", "shaders/ui_rect.frag");
-	selfUIL = new UI_Bar(true, true);
-	foeUIL = new UI_Bar(false, true);
-	selfUIR = new UI_Bar(true, false);
-	foeUIR = new UI_Bar(false, false);
-	selfUIL->fetchUniforms(uiShader, uiRectShader);
-	foeUIL->fetchUniforms(uiShader, uiRectShader);
-	selfUIR->fetchUniforms(uiShader, uiRectShader);
-	foeUIR->fetchUniforms(uiShader, uiRectShader);
+	skillShader = LoadShaders("shaders/skill.vert", "shaders/skill.frag");
+	glUseProgram(skillShader);
+	for (int i = 0; i < 5; i++) {
+		UI_Square *sq = new UI_Square(-.6f, .6f - .3f * i, i);
+		sq->fetchUniforms(skillShader);
+		skillIcons[i] = sq;
+	}
 
 	// Shaders for the unit HP bars
 	unitHPShader = LoadShaders("shaders/unithp.vert", "shaders/unithp.frag");
@@ -275,10 +272,7 @@ void Project4::shutdownGl() {
 	if (lightPositions) delete[] lightPositions;
 	if (lightColors) delete[] lightColors;
 	if (ground) delete ground;
-	if (selfUIL) delete selfUIL;
-	if (foeUIL) delete foeUIL;
-	if (selfUIR) delete selfUIR;
-	if (foeUIR) delete foeUIR;
+	if (skillIcons) delete[] skillIcons;
 	if (handSphere) delete handSphere;
 	if (leapSphere) delete leapSphere;
 	selfActors.clear();
@@ -300,19 +294,21 @@ void unitPickup(int id) {
 		foeActors[id - 2]->togglePlacing();
 	}
 	else {
-		foeActors[-2 - id]->toggleActive();
-		foeActors[-2 - id]->togglePlacing();
+		selfActors[-2 - id]->toggleActive();
+		selfActors[-2 - id]->togglePlacing();
 	}
+	cout << "Object picked up has ID " << objPickup << endl;
 }
 
 void unitPlacedown() {
+	cout << "Object placed down has ID " << objPickup << endl;
 	if (objPickup > 0) {
 		foeActors[objPickup - 2]->toggleActive();
 		foeActors[objPickup - 2]->togglePlacing();
 	}
 	else {
-		foeActors[-2 - objPickup]->toggleActive();
-		foeActors[-2 - objPickup]->togglePlacing();
+		selfActors[-2 - objPickup]->toggleActive();
+		selfActors[-2 - objPickup]->togglePlacing();
 	}
 	objPickup = 0;
 }
@@ -394,10 +390,6 @@ void Project4::update(mat4 left, mat4 right) {
 		for (Actor *b : foeActors) {
 			b->update();
 		}
-		selfUIL->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), true);
-		foeUIL->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), true);
-		selfUIR->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), false);
-		foeUIR->update(float(selfActors[0]->getHealthRatio()), selfNRG, float(foeActors[0]->getHealthRatio()), false);
 
 		// Now check for inputs
 		//cout << "Update hand" << endl;
@@ -411,7 +403,7 @@ void Project4::update(mat4 left, mat4 right) {
 			foeActors[objPickup - 2]->setPosition(leapHandPos.x, leapHandPos.y, leapHandPos.z);
 		}
 		else if(objPickup < 0){
-			foeActors[-2 - objPickup]->setPosition(leapHandPos.x, leapHandPos.y, leapHandPos.z);
+			selfActors[-2 - objPickup]->setPosition(leapHandPos.x, leapHandPos.y, leapHandPos.z);
 		}
 
 		// Check for any Touch input
@@ -538,38 +530,45 @@ void Project4::update(mat4 left, mat4 right) {
 						pickedUp->setPosition(handPos.x, 0, handPos.z);
 						pickedUp->togglePlacing();
 						pickedUp->toggleActive();
-						pickedUp = 0;
+						cout << "Local unit placed down" << endl;
 						client->sendUnitPlaced();
+						cout << "Unit placed down" << endl;
+						pickedUp = 0;
 						wasPickup = false;
 					}
 					// No actor picked up, check if we selected one instead
 					else {
-						for (Actor *a : selfActors) {
-							if (a->getType() == a_Tower) continue;
-							if (length(a->getPosition() - handPos) < .5f) {
-								pickedUp = a;
-								break;
-							}
-						}
-						if (!pickedUp) {
-							for (Actor *a : foeActors) {
+						if (selfNRG >= .25f) {
+							for (Actor *a : selfActors) {
 								if (a->getType() == a_Tower) continue;
 								if (length(a->getPosition() - handPos) < .5f) {
 									pickedUp = a;
 									break;
 								}
 							}
+							if (!pickedUp) {
+								for (Actor *a : foeActors) {
+									if (a->getType() == a_Tower) continue;
+									if (length(a->getPosition() - handPos) < .5f) {
+										pickedUp = a;
+										break;
+									}
+								}
+							}
+							if (pickedUp) {
+								pickedUp->toggleActive();
+								pickedUp->togglePlacing();
+								float theID;
+								if (pickedUp->getID() > 0)
+									theID = pickedUp->getID() + .1f;
+								else
+									theID = pickedUp->getID() - .1f;
+								client->sendUnitPickup(theID);
+								wasPickup = true;
+							}
 						}
-						if (pickedUp) {
-							pickedUp->toggleActive();
-							pickedUp->togglePlacing();
-							float theID;
-							if (pickedUp->getID() > 0)
-								theID = pickedUp->getID() + .1f;
-							else
-								theID = pickedUp->getID() - .1f;
-							client->sendUnitPickup(theID);
-							wasPickup = true;
+						else {
+							cout << "Not enough energy! Cost is 25. You have " << (selfNRG * 100) << endl;
 						}
 					}
 				}
@@ -719,14 +718,19 @@ void Project4::renderScene(const mat4& projection, const mat4& headPose, ovrEyeT
 	for (Actor *b : foeActors)
 		b->drawHP(unitHPShader);
 
+	glUseProgram(skillShader);
+
 	if (eye == ovrEye_Left) {
-		selfUIL->draw(uiShader, uiRectShader);
-		foeUIL->draw(uiShader, uiRectShader);
+		vec3 eyeLoc = vec3(headPose[3]);
+		client->sendHeadPos(eyeLoc.x, eyeLoc.y, eyeLoc.z);
 	}
-	else {
-		selfUIR->draw(uiShader, uiRectShader);
-		foeUIR->draw(uiShader, uiRectShader);
+	/*
+	mat4 p = projection;
+	mat4 v = headPose;
+	for (int i = 0; i < 5; i++) {
+		skillIcons[i]->draw(skillShader, p, v);
 	}
+	*/
 }
 
 void Project4::draw() {

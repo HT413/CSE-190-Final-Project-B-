@@ -17,7 +17,7 @@ enum PacketTypes {
 	LEAP_UNIT_PICK_UP = 8,
 	LEAP_UNIT_PLACED_DOWN = 9,
 	RIFT_UNIT_PICK_UP = 10,
-	RIFT_UNIT_PLACED_DOWN = 11
+	RIFT_UNIT_PLACED_DOWN = 11,
 };
 
 struct Packet {

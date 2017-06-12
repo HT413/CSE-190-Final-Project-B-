@@ -41,6 +41,24 @@ void ClientGame::sendHandPos(float x, float y, float z) {
 	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
 }
 
+void ClientGame::sendHeadPos(float x, float y, float z) {
+	const unsigned int packet_size = 33 * sizeof(Packet);
+	std::ostringstream ss;
+	float theX = -x;
+	float theZ = -z;
+	theZ -= 5.f;
+	ss << "ZZ" << "," << theX << "," << y << "," << theZ;
+	const char * str = ss.str().c_str();
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, str);
+
+	Packet packet;
+	packet.packet_type = RIFT_HEAD_LOC;
+
+	packet.serialize(packet_data);
+	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
+}
+
 void ClientGame::sendUnitCreation(float type, float id) {
 	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
@@ -60,7 +78,8 @@ void ClientGame::sendUnitCreation(float type, float id) {
 }
 
 void ClientGame::sendUnitPickup(float id) {
-	const unsigned int packet_size = 17 * sizeof(Packet);
+	cout << "Unit being picked up has id " << int(id) << endl;
+	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
 	ss << "ZZ" << "," << id;
 
@@ -132,6 +151,7 @@ void ClientGame::update()
 
 		case RIFT_UNIT_PICK_UP:
 		{
+			i += 32 * sizeof(Packet);
 			// Ignore this data
 			break;
 		}
@@ -148,12 +168,12 @@ void ClientGame::update()
 			std::vector<std::string> unitValues;
 			std::string split;
 
-			char unitInfo[16 * sizeof(Packet)];
-			for (int j = 0; j < 16 * sizeof(Packet); j++) {
+			char unitInfo[32 * sizeof(Packet)];
+			for (int j = 0; j < 32 * sizeof(Packet); j++) {
 				packet.deserialize(&(network_data[i + j]));
 			}
 
-			memcpy(unitInfo, network_data + i, 16 * sizeof(Packet));
+			memcpy(unitInfo, network_data + i, 32 * sizeof(Packet));
 
 			ss.str(unitInfo);
 			while (std::getline(ss, split, ',')) {
@@ -169,7 +189,7 @@ void ClientGame::update()
 				unitPickup(unitID);
 			}
 
-			i += 16 * sizeof(Packet);
+			i += 32 * sizeof(Packet);
 
 			break;
 		}
@@ -211,6 +231,7 @@ void ClientGame::update()
 
 		case RIFT_UNIT_CREATION:
 		{
+			i += 32 * sizeof(Packet);
 			// Ignore this data
 			break;
 		}
@@ -248,9 +269,18 @@ void ClientGame::update()
 
 		case RIFT_HAND_LOC: 
 		{
+			i += 32 * sizeof(Packet);
 			// Ignore this data
 			break;
 		}
+
+		case RIFT_HEAD_LOC:
+		{
+			i += 32 * sizeof(Packet);
+			// Ignore this data
+			break;
+		}
+
 		case GAME_START_NOTICE:
 			gameStart = true;
 			printf("Opponent found! Game now starting!\n");

@@ -52,7 +52,7 @@ public:
 	void drawHP(GLuint);
 	void setActionTime(double t){ actionTime = t; }
 	int getID() { return id; }
-	void setID(int i) { id = i; cout << "ID is " << id << endl; }
+	void setID(int i) { id = i; }
 	virtual void move() = 0;
 	virtual void doAction() = 0;
 	ACTOR_TYPE getType(){ return type; }

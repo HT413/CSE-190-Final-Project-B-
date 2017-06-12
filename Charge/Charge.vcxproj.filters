@@ -70,6 +70,12 @@
     <None Include="shaders\unithp.frag">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shaders\skill.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\skill.frag">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Globals.h">
