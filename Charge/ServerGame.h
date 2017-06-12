@@ -17,6 +17,8 @@ public:
 	void sendActionPackets();
 	void notifyStart();
 	void sendRiftHandPos(float, float, float);
+	void sentRiftUnitCreation(float, float);
+	void sentLeapUnitCreation(float, float);
 
 private:
 	// IDs for the clients connecting for table in ServerNetwork 

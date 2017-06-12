@@ -7,6 +7,8 @@
 #include "Oculus.cpp"
 #include "Skybox.h"
 
+extern enum ACTOR_TYPE;
+
 class Project4 : public RiftApp {
 private:
 	Skybox *wallSky, *caveSkybox;
@@ -21,5 +23,6 @@ protected:
 };
 
 void updateLeapPos(vec3);
+void createNewUnit(ACTOR_TYPE, int);
 
 #endif

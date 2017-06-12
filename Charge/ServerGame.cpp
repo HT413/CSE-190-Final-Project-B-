@@ -55,7 +55,40 @@ void ServerGame::receiveFromClients()
 
 			switch (packet.packet_type) {
 			case RIFT_UNIT_CREATION:
+			{
+				std::stringstream ss;
+				std::vector<std::string> unitValues;
+				std::string split;
+
+
+
+				char unitInfo[32 * sizeof(Packet)];
+				for (int j = 0; j < 32 * sizeof(Packet); j++) {
+					packet.deserialize(&(network_data[i + j]));
+				}
+
+				memcpy(unitInfo, network_data + i, 32 * sizeof(Packet));
+
+				ss.str(unitInfo);
+				while (std::getline(ss, split, ',')) {
+					//split contains the coorindates of hand position
+					if (split.length() > 1) {	//ignore the first nonsense characters
+						unitValues.push_back(split);
+					}
+				}
+
+
+
+				if (unitValues.size() > 1) {
+					ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(int(stof(unitValues[1])));
+					int unitID = int(stof(unitValues[2]));
+					sentRiftUnitCreation((float)unitType + 0.1f, (float)unitID - 0.1f);
+				}
+
+				i += 32 * sizeof(Packet);
+				
 				break;
+			}
 
 			case LEAP_UNIT_CREATION:
 			{
@@ -77,7 +110,6 @@ void ServerGame::receiveFromClients()
 					//split contains the coorindates of hand position
 					if (split.length() > 1) {	//ignore the first nonsense characters
 						unitValues.push_back(split);
-						cout << split << " "<<endl;
 					}
 				}
 			
@@ -86,14 +118,10 @@ void ServerGame::receiveFromClients()
 				if (unitValues.size() > 1) {
 					ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(int(stof(unitValues[1])));
 					int unitID = int(stof(unitValues[2]));
-
-					cout << "New unit is " << unitType << " of ID " << unitID << endl;
+					sentLeapUnitCreation((float)unitType + 0.1f, (float)unitID - 0.1f);
 				}
 
-				cout << "WE HERE BOIS";
-				getchar();
-
-				i += 16 * sizeof(Packet);
+				i += 32 * sizeof(Packet);
 				break;
 			}
 
@@ -220,6 +248,43 @@ void ServerGame::sendRiftHandPos(float x, float y, float z) {
 
 	Packet packet;
 	packet.packet_type = RIFT_HAND_LOC;
+
+	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
+void ServerGame::sentRiftUnitCreation(float type, float id) {
+	const unsigned int packet_size = 33 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << type << "," << id;
+
+	char* cstr = new char[packet_size];
+	std::strcpy(cstr, ss.str().c_str());
+
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, cstr);
+
+	Packet packet;
+	packet.packet_type = RIFT_UNIT_CREATION;
+
+	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
+
+void ServerGame::sentLeapUnitCreation(float type, float id) {
+	const unsigned int packet_size = 33 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << type << "," << id;
+
+	char* cstr = new char[packet_size];
+	std::strcpy(cstr, ss.str().c_str());
+
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, cstr);
+
+	Packet packet;
+	packet.packet_type = LEAP_UNIT_CREATION;
 
 	packet.serialize(packet_data);
 	network->sendToAll(packet_data, packet_size);

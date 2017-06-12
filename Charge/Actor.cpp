@@ -33,15 +33,15 @@ void Actor::draw(GLuint shaderProgram){
 	}
 }
 
-Soldier::Soldier(OBJObject* o) : Actor(o){
+Soldier::Soldier(OBJObject* o) : Actor(o) {
 	type = a_Soldier;
 	maxHealth = health = 270.0;
 	damage = 80.0;
-	actionTime = 1.6;
+	actionTime = 1.2;
 	range = 0.5;
 }
 
-Cannon::Cannon(OBJObject* o): Actor(o){
+Cannon::Cannon(OBJObject* o) : Actor(o) {
 	type = a_Cannon;
 	maxHealth = health = 160.0;
 	damage = 400.0;
@@ -49,7 +49,7 @@ Cannon::Cannon(OBJObject* o): Actor(o){
 	range = 3.0;
 }
 
-Tank::Tank(OBJObject* o): Actor(o){
+Tank::Tank(OBJObject* o) : Actor(o) {
 	type = a_Tank;
 	maxHealth = health = 1800.0;
 	damage = 160.0;
@@ -57,7 +57,7 @@ Tank::Tank(OBJObject* o): Actor(o){
 	range = 2.5;
 }
 
-Wall::Wall(OBJObject* o): Actor(o){
+Wall::Wall(OBJObject* o) : Actor(o) {
 	type = a_Wall;
 	maxHealth = health = 3000.0;
 	damage = 0.0;
@@ -65,7 +65,7 @@ Wall::Wall(OBJObject* o): Actor(o){
 	range = 0.0;
 }
 
-Tower::Tower(OBJObject* o): Actor(o){
+Tower::Tower(OBJObject* o) : Actor(o) {
 	type = a_Tower;
 	maxHealth = health = 10000.0;
 	damage = 0.0;
@@ -75,10 +75,10 @@ Tower::Tower(OBJObject* o): Actor(o){
 
 void Soldier::move(){
 	// Check if should move
-	if(!isActive) return;
+	double currTime = glfwGetTime();
+	if(!isActive) lastTime = currTime;
 	Actor *collideAgainst = 0;
 	if(shouldMove){
-		double currTime = glfwGetTime();
 		position.z += ((id < 0)? -1.8f : 1.8f) * (currTime - lastTime);
 		lastTime = currTime;
 		// Check which opponent (if any) are in this unit's hit range
@@ -161,10 +161,10 @@ void Soldier::doAction(){
 
 void Tank::move(){
 	// Check if should move
-	if(!isActive) return;
+	double currTime = glfwGetTime();
+	if (!isActive) lastTime = currTime;
 	Actor *collideAgainst = 0;
 	if(shouldMove){
-		double currTime = glfwGetTime();
 		position.z += ((id < 0)? -1.2f : 1.2f) * (currTime - lastTime);
 		lastTime = currTime;
 		// Check which opponent (if any) are in this unit's hit range
@@ -247,10 +247,10 @@ void Tank::doAction(){
 
 void Cannon::move(){
 	// Check if should move
-	if(!isActive) return;
+	double currTime = glfwGetTime();
+	if (!isActive) lastTime = currTime;
 	Actor *collideAgainst = 0;
 	if(shouldMove){
-		double currTime = glfwGetTime();
 		position.z += ((id < 0)? -.6f : .6f) * (currTime - lastTime);
 		lastTime = currTime;
 		// Check which opponent (if any) are in this unit's hit range

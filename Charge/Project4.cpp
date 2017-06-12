@@ -250,7 +250,7 @@ void Project4::initGl() {
 	// Start the server and client
 	server = new ServerGame();
 	client = new ClientGame();
-	gameStart = true;
+	gameStart = false;
 	wasPickup = false;
 }
 
@@ -286,6 +286,52 @@ void Project4::shutdownGl() {
 
 void updateLeapPos(vec3 p) {
 	leapHandPos = p;
+}
+
+void createNewUnit(ACTOR_TYPE type, int id) {
+	switch (type) {
+		case a_Soldier:
+		{
+			Actor* actor = new Soldier(soldierObj);
+			actor->setID(id);
+			actor->setPosition(leapHandPos.x, 0, leapHandPos.z);
+			actor->toggleActive();
+			actor->togglePlacing();
+			foeActors.push_back(actor);
+			break;
+		}
+		case a_Tank:
+		{
+			Actor* actor = new Tank(tankObj);
+			actor->setID(id);
+			actor->setPosition(leapHandPos.x, 0, leapHandPos.z);
+			actor->toggleActive();
+			actor->togglePlacing();
+			foeActors.push_back(actor);
+			break;
+		}
+		case a_Wall:
+		{
+			Actor* actor = new Wall(wallObj);
+			actor->setID(id);
+			actor->setPosition(leapHandPos.x, 0, leapHandPos.z);
+			actor->toggleActive();
+			actor->togglePlacing();
+			foeActors.push_back(actor);
+			break;
+		}
+		case a_Cannon:
+		{
+			Actor* actor = new Cannon(cannonObj);
+			actor->setID(id);
+			actor->setPosition(leapHandPos.x, 0, leapHandPos.z);
+			actor->toggleActive();
+			actor->togglePlacing();
+			foeActors.push_back(actor);
+			break;
+		}
+
+	}
 }
 
 void Project4::update(mat4 left, mat4 right) {
@@ -346,25 +392,48 @@ void Project4::update(mat4 left, mat4 right) {
 							pickedUp->setPosition(handPos.x, 0, handPos.z);
 							pickedUp->togglePlacing();
 							pickedUp->toggleActive();
+							if (!wasPickup) {
+								client->sendUnitCreation(0.1f, pickedUp->getID() - .1f);
+							}
 							pickedUp = 0;
 							wasPickup = false;
 						}
 						else {
 							size_t actorsSize = selfActors.size();
-							Actor *oldChoice = selfActors.at(actorsSize - 1);
-							delete(oldChoice);
-							pickedUp = new Soldier(soldierObj);
-							pickedUp->setID(-objCount);
-							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-							selfActors[actorsSize - 1] = pickedUp;
+							switch (selfActors[actorsSize - 1]->getType()) {
+							case a_Soldier: selfNRG += .15f; break;
+							case a_Tank: selfNRG += .45f; break;
+							case a_Wall: selfNRG += .6f; break;
+							case a_Cannon: selfNRG += .5f; break;
+							}
+							selfActors.erase(selfActors.begin() + actorsSize - 1);
+							objCount--;
+							pickedUp = 0;
+							if (selfNRG >= .15f) {
+								selfNRG -= .15f;
+								pickedUp = new Soldier(soldierObj);
+								objCount++;
+								pickedUp->setID(-objCount);
+								pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+								selfActors.push_back(pickedUp);
+							}
+							else {
+								cout << "Not enough energy! Cost is 15. You have " << (selfNRG * 100) << endl;
+							}
 						}
 					}
 					else {
-						pickedUp = new Soldier(soldierObj);
-						objCount++;
-						pickedUp->setID(-objCount);
-						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-						selfActors.push_back(pickedUp);
+						if (selfNRG >= .15f) {
+							selfNRG -= .15f;
+							pickedUp = new Soldier(soldierObj);
+							objCount++;
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors.push_back(pickedUp);
+						}
+						else {
+							cout << "Not enough energy! Cost is 15. You have " << (selfNRG * 100) << endl;
+						}
 					}
 				}
 			}
@@ -379,25 +448,48 @@ void Project4::update(mat4 left, mat4 right) {
 							pickedUp->setPosition(handPos.x, 0, handPos.z);
 							pickedUp->togglePlacing();
 							pickedUp->toggleActive();
+							if (!wasPickup)
+								client->sendUnitCreation(1.1f, pickedUp->getID() - .1f );
 							pickedUp = 0;
 							wasPickup = false;
+							
 						}
 						else {
 							size_t actorsSize = selfActors.size();
-							Actor *oldChoice = selfActors.at(actorsSize - 1);
-							delete(oldChoice);
-							pickedUp = new Tank(tankObj);
-							pickedUp->setID(-objCount);
-							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-							selfActors[actorsSize - 1] = pickedUp;
+							switch (selfActors[actorsSize - 1]->getType()) {
+							case a_Soldier: selfNRG += .15f; break;
+							case a_Tank: selfNRG += .45f; break;
+							case a_Wall: selfNRG += .6f; break;
+							case a_Cannon: selfNRG += .5f; break;
+							}
+							selfActors.erase(selfActors.begin() + actorsSize - 1);
+							objCount--;
+							pickedUp = 0;
+							if (selfNRG >= .45f) {
+								selfNRG -= .45f;
+								pickedUp = new Tank(tankObj);
+								objCount++;
+								pickedUp->setID(-objCount);
+								pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+								selfActors.push_back(pickedUp);
+							}
+							else {
+								cout << "Not enough energy! Cost is 45. You have " << (selfNRG * 100) << endl;
+							}
 						}
 					}
 					else {
-						pickedUp = new Tank(tankObj);
-						objCount++;
-						pickedUp->setID(-objCount);
-						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-						selfActors.push_back(pickedUp);
+						if (selfNRG >= .45f) {
+							selfNRG -= .45f;
+							pickedUp = new Tank(tankObj);
+							objCount++;
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors.push_back(pickedUp);
+						}
+						else {
+							cout << "Not enough energy! Cost is 45. You have " << (selfNRG * 100) << endl;
+						}
 					}
 				}
 			}
@@ -451,25 +543,47 @@ void Project4::update(mat4 left, mat4 right) {
 							pickedUp->setPosition(handPos.x, 0, handPos.z);
 							pickedUp->togglePlacing();
 							pickedUp->toggleActive();
+							if (!wasPickup)
+								client->sendUnitCreation(3.1f, pickedUp->getID() - .1f);
 							pickedUp = 0;
 							wasPickup = false;
 						}
 						else {
 							size_t actorsSize = selfActors.size();
-							Actor *oldChoice = selfActors.at(actorsSize - 1);
-							delete(oldChoice);
-							pickedUp = new Cannon(cannonObj);
-							pickedUp->setID(-objCount);
-							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-							selfActors[actorsSize - 1] = pickedUp;
+							switch (selfActors[actorsSize - 1]->getType()) {
+							case a_Soldier: selfNRG += .15f; break;
+							case a_Tank: selfNRG += .45f; break;
+							case a_Wall: selfNRG += .6f; break;
+							case a_Cannon: selfNRG += .5f; break;
+							}
+							selfActors.erase(selfActors.begin() + actorsSize - 1);
+							objCount--;
+							pickedUp = 0;
+							if (selfNRG >= .5f) {
+								selfNRG -= .5f;
+								pickedUp = new Cannon(cannonObj);
+								objCount++;
+								pickedUp->setID(-objCount);
+								pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+								selfActors.push_back(pickedUp);
+							}
+							else {
+								cout << "Not enough energy! Cost is 50. You have " << (selfNRG * 100) << endl;
+							}
 						}
 					}
 					else {
-						pickedUp = new Cannon(cannonObj);
-						objCount++;
-						pickedUp->setID(-objCount);
-						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-						selfActors.push_back(pickedUp);
+						if (selfNRG >= .5f) {
+							selfNRG -= .5f;
+							pickedUp = new Cannon(cannonObj);
+							objCount++;
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors.push_back(pickedUp);
+						}
+						else {
+							cout << "Not enough energy! Cost is 50. You have " << (selfNRG * 100) << endl;
+						}
 					}
 				}
 			}
@@ -483,25 +597,47 @@ void Project4::update(mat4 left, mat4 right) {
 							pickedUp->setPosition(handPos.x, 0, handPos.z);
 							pickedUp->togglePlacing();
 							pickedUp->toggleActive();
+							if (!wasPickup)
+								client->sendUnitCreation(2.1f, pickedUp->getID() - .1f);
 							pickedUp = 0;
 							wasPickup = false;
 						}
 						else {
 							size_t actorsSize = selfActors.size();
-							Actor *oldChoice = selfActors.at(actorsSize - 1);
-							delete(oldChoice);
-							pickedUp = new Wall(wallObj);
-							pickedUp->setID(-objCount);
-							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-							selfActors[actorsSize - 1] = pickedUp;
+							switch (selfActors[actorsSize - 1]->getType()) {
+							case a_Soldier: selfNRG += .15f; break;
+							case a_Tank: selfNRG += .45f; break;
+							case a_Wall: selfNRG += .6f; break;
+							case a_Cannon: selfNRG += .5f; break;
+							}
+							selfActors.erase(selfActors.begin() + actorsSize - 1);
+							objCount--;
+							pickedUp = 0;
+							if (selfNRG >= .6f) {
+								selfNRG -= .6f;
+								pickedUp = new Wall(wallObj);
+								objCount++;
+								pickedUp->setID(-objCount);
+								pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+								selfActors.push_back(pickedUp);
+							}
+							else {
+								cout << "Not enough energy! Cost is 60. You have " << (selfNRG * 100) << endl;
+							}
 						}
 					}
 					else {
-						pickedUp = new Wall(wallObj);
-						objCount++;
-						pickedUp->setID(-objCount);
-						pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
-						selfActors.push_back(pickedUp);
+						if (selfNRG >= .6f) {
+							selfNRG -= .6f;
+							pickedUp = new Wall(wallObj);
+							objCount++;
+							pickedUp->setID(-objCount);
+							pickedUp->setModel(rotate(mat4(1.f), PI, vec3(0, 1, 0)));
+							selfActors.push_back(pickedUp);
+						}
+						else {
+							cout << "Not enough energy! Cost is 60. You have " << (selfNRG * 100) << endl;
+						}
 					}
 				}
 			}

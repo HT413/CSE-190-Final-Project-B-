@@ -41,13 +41,16 @@ void ClientGame::sendHandPos(float x, float y, float z) {
 	NetworkService::sendMessage(network->ConnectSocket, packet_data, packet_size);
 }
 
-void ClientGame::sendUnitCreation(ACTOR_TYPE type, int id) {
+void ClientGame::sendUnitCreation(float type, float id) {
 	const unsigned int packet_size = 32 * sizeof(Packet);
 	std::ostringstream ss;
 	ss << "ZZ" << "," << type << "," << id;
-	const char * str = ss.str().c_str();
+	
+	char* cstr = new char[packet_size];
+	std::strcpy(cstr, ss.str().c_str());
+
 	char packet_data[packet_size];
-	strcpy(packet_data + 4, str);
+	strcpy(packet_data + 4, cstr);
 
 	Packet packet;
 	packet.packet_type = RIFT_UNIT_CREATION;
@@ -96,10 +99,12 @@ void ClientGame::update()
 			std::string split;
 
 
+
 			char unitInfo[32 * sizeof(Packet)];
-			for (int j = 0; j < 16 * sizeof(Packet); j++) {
+			for (int j = 0; j < 32 * sizeof(Packet); j++) {
 				packet.deserialize(&(network_data[i + j]));
 			}
+
 			memcpy(unitInfo, network_data + i, 32 * sizeof(Packet));
 
 			ss.str(unitInfo);
@@ -110,10 +115,14 @@ void ClientGame::update()
 				}
 			}
 
-			ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(stoi(unitValues[0]));
-			int unitID = stoi(unitValues[1]);
 
-			cout << "New unit is " << unitType << " of ID " << unitID << endl;
+
+			if (unitValues.size() > 1) {
+				ACTOR_TYPE unitType = static_cast<ACTOR_TYPE>(int(stof(unitValues[1])));
+				int unitID = int(stof(unitValues[2]));
+				createNewUnit(unitType, unitID);
+				cout << "New unit is " << unitType << " of ID " << unitID << endl;
+			}
 
 			i += 32 * sizeof(Packet);
 			break;
