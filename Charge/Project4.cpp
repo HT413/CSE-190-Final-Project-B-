@@ -11,6 +11,7 @@
 #include "ServerGame.h"
 #include "ClientGame.h"
 #include <process.h>
+#include <glm/gtx/quaternion.hpp>
 
 // Server stuff
 ServerGame * server;
@@ -115,6 +116,8 @@ ovrPosef handPose;
 vec3 leapHandPos = vec3(0, -1, 0);
 vec3 leapHandOri = vec3(0, 0, 0);
 vec3 lastEyePos = vec3(0, 0, 0);
+vec3 lastEyeOri = vec3(0, 0, 0);
+vec3 lastHandOri = vec3(0, 0, 0);
 
 // Other variables
 bool gameStart;
@@ -396,6 +399,8 @@ void Project4::update(mat4 left, mat4 right) {
 	handPose = trackState.HandPoses[ovrHand_Right].ThePose;
 
 	vec3 handPos = ovr::toGlm(handPose.Position);
+	ovrQuatf hq = handPose.Orientation;
+	lastHandOri = vec3(hq.x, hq.y, hq.z);
 
 	// Check for server response
 	double currTime = glfwGetTime();
@@ -405,6 +410,8 @@ void Project4::update(mat4 left, mat4 right) {
 		if (gameStart) {
 			client->sendHandPos(handPos.x, handPos.y, handPos.z);
 			client->sendHeadPos(lastEyePos.x, lastEyePos.y, lastEyePos.z);
+			client->sendHandOri(lastHandOri.x, lastHandOri.y, lastHandOri.z);
+			client->sendHeadOri(lastEyeOri.x, lastEyeOri.y, lastEyeOri.z);
 		}
 		client->update();
 		lastUpdateTime = currTime;
@@ -430,6 +437,13 @@ void Project4::update(mat4 left, mat4 right) {
 		handObject->setPos(handPos);
 		//leapHandObject->setModel(translate(mat4(1.f), leapHandPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
 		leapHandObject->setPos(leapHandPos);
+		float wL = sqrtf(1.f - length(leapHandOri));
+		quat leapQuat(wL, -leapHandOri.x, -leapHandOri.y, -leapHandOri.z);
+		leapHandObject->setRotation(toMat4(leapQuat));
+
+		float wRO = sqrtf(1.f - length(lastHandOri));
+		quat riftHandQuat(wL, -lastHandOri.x, -lastHandOri.y, -lastHandOri.z);
+		handObject->setRotation(toMat4(riftHandQuat));
 
 		if (pickedUp) {
 			pickedUp->setPosition(handPos.x, handPos.y, handPos.z);
@@ -794,6 +808,9 @@ void Project4::draw() {
 	glViewport(vp2.Pos.x, vp2.Pos.y, vp2.Size.w, vp2.Size.h);
 	_sceneLayer.RenderPose[ovrEye_Right] = eyePoses[ovrEye_Right];
 	renderScene(_eyeProjections[ovrEye_Right], ovr::toGlm(eyePoses[ovrEye_Right]), ovrEye_Right);
+
+	ovrQuatf q = eyePoses[ovrEye_Left].Orientation;
+	lastEyeOri = vec3(q.x, q.y, q.z);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
