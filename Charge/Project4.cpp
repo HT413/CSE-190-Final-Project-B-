@@ -6,6 +6,7 @@
 #include "Actor.h"
 #include "Shader.hpp"
 #include "Sphere.h"
+#include "Cube.h"
 
 #include "ServerGame.h"
 #include "ClientGame.h"
@@ -78,6 +79,11 @@ vec3 spherebAmbient = vec3(.05f, .08f, .29f);
 vec3 spherebDiffuse = vec3(.14f, .22f, .93f);
 vec3 spherebSpecular = vec3(.10f, .15f, .96f);
 
+Material *sphere_Red;
+vec3 sphererAmbient = vec3(.29f, .08f, .05f);
+vec3 sphererDiffuse = vec3(.93f, .22f, .14f);
+vec3 sphererSpecular = vec3(.96f, .15f, .10f);
+
 
 // For the ground
 vec3 groundColor = vec3(.6f, .6f, .6f);
@@ -100,13 +106,15 @@ OBJObject* soldierObj, *tankObj, *wallObj, *cannonObj, *castleObj;
 Actor* pickedUp;
 
 // For the hand
-Sphere *handSphere, *leapSphere;
+Cube *handObject, *leapHandObject, *leapHeadObject;
 
 // OVR input related
 ovrInputState inputState;
 bool touchInputReceived;
 ovrPosef handPose;
 vec3 leapHandPos = vec3(0, -1, 0);
+vec3 leapHandOri = vec3(0, 0, 0);
+vec3 lastEyePos = vec3(0, 0, 0);
 
 // Other variables
 bool gameStart;
@@ -181,6 +189,10 @@ void Project4::initGl() {
 	((RegMaterial*)sphere_Blue)->setMaterial(spherebAmbient, spherebDiffuse, spherebSpecular, sphereShininess);
 	sphere_Blue->getUniformLocs(phongShader);
 
+	sphere_Red = new RegMaterial();
+	((RegMaterial*)sphere_Red)->setMaterial(sphererAmbient, sphererDiffuse, sphererSpecular, sphereShininess);
+	sphere_Red->getUniformLocs(phongShader);
+
 	soldierObj->setMaterial(soldier_Navy);
 	soldierObj->setModel(translate(mat4(1.f), vec3(0, -.15f, 0)) * scale(mat4(1.f), vec3(1.2f, .7f, 1.f)));
 
@@ -240,10 +252,23 @@ void Project4::initGl() {
 
 	// The hand spheres
 	glUseProgram(phongShader);
-	handSphere = new Sphere(20, 20);
-	handSphere->setMaterial(sphere_Green);
-	leapSphere = new Sphere(20, 20);
-	leapSphere->setMaterial(sphere_Blue);
+	/*
+	handObject = new Sphere(20, 20);
+	handObject->setMaterial(sphere_Green);
+	leapHandObject = new Sphere(20, 20);
+	leapHandObject->setMaterial(sphere_Blue);
+	leapHeadObject = new Sphere(20, 20);
+	leapHeadObject->setMaterial(sphere_Red);
+	leapHeadObject->setModel(translate(mat4(1.f), vec3(0, 4.f, -11.5f)) * scale(mat4(1.f), vec3(.4f, .4f, .4f)));
+	*/
+	handObject = new Cube();
+	handObject->setColor(vec3(0, 1, 0));
+	leapHandObject = new Cube();
+	leapHandObject->setColor(vec3(0, 0, 1));
+	leapHeadObject = new Cube();
+	leapHeadObject->setColor(vec3(1, 0, 0));
+	leapHeadObject->setPos(vec3(0, 4, -11.5f));
+	leapHeadObject->setRotation(rotate(mat4(1.f), PI / 5.5f, vec3(1, 0, 0)));
 
 	// Misc initializations
 	touchInputReceived = false;
@@ -265,6 +290,7 @@ void Project4::shutdownGl() {
 	if (tank_Green) delete tank_Green;
 	if (sphere_Green) delete sphere_Green;
 	if (sphere_Blue) delete sphere_Blue;
+	if (sphere_Red) delete sphere_Red;
 	if (wall_Brown) delete wall_Brown;
 	if (soldier_Navy) delete soldier_Navy;
 	if (cannon_Dark) delete cannon_Dark;
@@ -273,8 +299,9 @@ void Project4::shutdownGl() {
 	if (lightColors) delete[] lightColors;
 	if (ground) delete ground;
 	if (skillIcons) delete[] skillIcons;
-	if (handSphere) delete handSphere;
-	if (leapSphere) delete leapSphere;
+	if (handObject) delete handObject;
+	if (leapHandObject) delete leapHandObject;
+	if (leapHeadObject) delete leapHeadObject;
 	selfActors.clear();
 	foeActors.clear();
 
@@ -285,6 +312,10 @@ void Project4::shutdownGl() {
 
 void updateLeapPos(vec3 p) {
 	leapHandPos = p;
+}
+
+void updateLeapOri(vec3 p) {
+	leapHandOri = p;
 }
 
 void unitPickup(int id) {
@@ -371,8 +402,10 @@ void Project4::update(mat4 left, mat4 right) {
 	if (!gameStart) lastTime = currTime;
 	if (currTime - lastUpdateTime > 0.04) {
 		server->update();
-		if(gameStart)
+		if (gameStart) {
 			client->sendHandPos(handPos.x, handPos.y, handPos.z);
+			client->sendHeadPos(lastEyePos.x, lastEyePos.y, lastEyePos.z);
+		}
 		client->update();
 		lastUpdateTime = currTime;
 	}
@@ -393,8 +426,10 @@ void Project4::update(mat4 left, mat4 right) {
 
 		// Now check for inputs
 		//cout << "Update hand" << endl;
-		handSphere->setModel(translate(mat4(1.f), handPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
-		leapSphere->setModel(translate(mat4(1.f), leapHandPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
+		//handObject->setModel(translate(mat4(1.f), handPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
+		handObject->setPos(handPos);
+		//leapHandObject->setModel(translate(mat4(1.f), leapHandPos) * scale(mat4(1.f), vec3(.2f, .2f, .2f)));
+		leapHandObject->setPos(leapHandPos);
 
 		if (pickedUp) {
 			pickedUp->setPosition(handPos.x, handPos.y, handPos.z);
@@ -707,8 +742,11 @@ void Project4::renderScene(const mat4& projection, const mat4& headPose, ovrEyeT
 		a->draw(objShader);
 	for (Actor *b : foeActors)
 		b->draw(objShader);
-	handSphere->draw(objShader);
-	leapSphere->draw(objShader);
+	/*
+	handObject->draw(objShader);
+	leapHandObject->draw(objShader);
+	leapHeadObject->draw(objShader);
+	*/
 
 	glUseProgram(unitHPShader);
 	glUniformMatrix4fv(glGetUniformLocation(unitHPShader, "projection"), 1, GL_FALSE, &(projection[0][0]));
@@ -717,12 +755,14 @@ void Project4::renderScene(const mat4& projection, const mat4& headPose, ovrEyeT
 		a->drawHP(unitHPShader);
 	for (Actor *b : foeActors)
 		b->drawHP(unitHPShader);
+	handObject->draw(unitHPShader);
+	leapHandObject->draw(unitHPShader);
+	leapHeadObject->draw(unitHPShader);
 
 	glUseProgram(skillShader);
 
 	if (eye == ovrEye_Left) {
-		vec3 eyeLoc = vec3(headPose[3]);
-		client->sendHeadPos(eyeLoc.x, eyeLoc.y, eyeLoc.z);
+		lastEyePos = vec3(headPose[3]);
 	}
 	/*
 	mat4 p = projection;

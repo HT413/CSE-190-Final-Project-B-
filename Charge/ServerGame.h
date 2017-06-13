@@ -22,6 +22,9 @@ public:
 	void sendRiftPlaceDown();
 	void sendRiftHandPos(float, float, float);
 	void sendRiftHeadPos(float, float, float);
+	void sendRiftHandOri(float, float, float);
+	void sendRiftHeadOri(float, float, float);
+	void sendLeapHandOri(float, float, float);
 	void sentRiftUnitCreation(float, float);
 	void sentLeapUnitCreation(float, float);
 

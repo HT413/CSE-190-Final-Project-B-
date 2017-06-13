@@ -239,6 +239,41 @@ void ServerGame::receiveFromClients()
 				break;
 			}
 
+			case LEAP_HAND_ORI:
+			{
+				/* data structures to split string by ',' */
+				std::stringstream ss;
+				std::vector<std::string> handPosValues;
+				std::string split;
+
+
+				char loc[32 * sizeof(Packet)];
+				for (int j = 0; j < 32 * sizeof(Packet); j++) {
+					packet.deserialize(&(network_data[i + j]));
+				}
+				memcpy(loc, network_data + i, 32 * sizeof(Packet));
+
+				ss.str(loc);
+				while (std::getline(ss, split, ',')) {
+					//split contains the coorindates of hand position
+					if (split.length() > 2) {	//ignore the first nonsense characters
+						handPosValues.push_back(split);
+					}
+				}
+
+				vec3 theHandPosition;
+				if (handPosValues.size() > 2) {
+					theHandPosition.x = std::stof(handPosValues[0]);	//stof converts string to float
+					theHandPosition.y = std::stof(handPosValues[1]);
+					theHandPosition.z = std::stof(handPosValues[2]);
+					updateLeapOri(vec3(theHandPosition.x, theHandPosition.y, theHandPosition.z));
+				}
+
+				i += 32 * sizeof(Packet);
+
+				break;
+			}
+
 			case RIFT_HAND_LOC:
 				{
 					/* data structures to split string by ',' */
@@ -273,6 +308,40 @@ void ServerGame::receiveFromClients()
 					break;
 				}
 
+			case RIFT_HAND_ORI:
+			{
+				/* data structures to split string by ',' */
+				std::stringstream ss;
+				std::vector<std::string> handPosValues;
+				std::string split;
+
+
+				char loc[32 * sizeof(Packet)];
+				for (int j = 0; j < 32 * sizeof(Packet); j++) {
+					packet.deserialize(&(network_data[i + j]));
+				}
+				memcpy(loc, network_data + i, 32 * sizeof(Packet));
+
+				ss.str(loc);
+				while (std::getline(ss, split, ',')) {
+					//split contains the coorindates of hand position
+					if (split.length() > 2) {	//ignore the first nonsense characters
+						handPosValues.push_back(split);
+					}
+				}
+
+				vec3 theHandPosition;
+				if (handPosValues.size() > 2) {
+					theHandPosition.x = std::stof(handPosValues[0]);	//stof converts string to float
+					theHandPosition.y = std::stof(handPosValues[1]);
+					theHandPosition.z = std::stof(handPosValues[2]);
+				}
+
+				i += 32 * sizeof(Packet);
+				sendRiftHandOri(theHandPosition.x, theHandPosition.y, theHandPosition.z);
+				break;
+			}
+
 			case RIFT_HEAD_LOC:
 			{
 				/* data structures to split string by ',' */
@@ -304,6 +373,40 @@ void ServerGame::receiveFromClients()
 
 				i += 32 * sizeof(Packet);
 				sendRiftHeadPos(theHeadPosition.x, theHeadPosition.y, theHeadPosition.z);
+				break;
+			}
+
+			case RIFT_HEAD_ORI:
+			{
+				/* data structures to split string by ',' */
+				std::stringstream ss;
+				std::vector<std::string> headPosValues;
+				std::string split;
+
+
+				char loc[32 * sizeof(Packet)];
+				for (int j = 0; j < 32 * sizeof(Packet); j++) {
+					packet.deserialize(&(network_data[i + j]));
+				}
+				memcpy(loc, network_data + i, 32 * sizeof(Packet));
+
+				ss.str(loc);
+				while (std::getline(ss, split, ',')) {
+					//split contains the coorindates of hand position
+					if (split.length() > 2) {	//ignore the first nonsense characters
+						headPosValues.push_back(split);
+					}
+				}
+
+				vec3 theHeadPosition;
+				if (headPosValues.size() > 2) {
+					theHeadPosition.x = std::stof(headPosValues[0]);	//stof converts string to float
+					theHeadPosition.y = std::stof(headPosValues[1]);
+					theHeadPosition.z = std::stof(headPosValues[2]);
+				}
+
+				i += 32 * sizeof(Packet);
+				sendRiftHeadOri(theHeadPosition.x, theHeadPosition.y, theHeadPosition.z);
 				break;
 			}
 
@@ -432,6 +535,36 @@ void ServerGame::sendRiftHandPos(float x, float y, float z) {
 	network->sendToAll(packet_data, packet_size);
 }
 
+void ServerGame::sendRiftHandOri(float x, float y, float z) {
+	const unsigned int packet_size = 33 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << x << "," << y << "," << z;
+	const char * str = ss.str().c_str();
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, str);
+
+	Packet packet;
+	packet.packet_type = RIFT_HAND_ORI;
+
+	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
+void ServerGame::sendLeapHandOri(float x, float y, float z) {
+	const unsigned int packet_size = 33 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << x << "," << y << "," << z;
+	const char * str = ss.str().c_str();
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, str);
+
+	Packet packet;
+	packet.packet_type = LEAP_HAND_ORI;
+
+	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
 void ServerGame::sendRiftHeadPos(float x, float y, float z) {
 	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
@@ -442,6 +575,21 @@ void ServerGame::sendRiftHeadPos(float x, float y, float z) {
 
 	Packet packet;
 	packet.packet_type = RIFT_HEAD_LOC;
+
+	packet.serialize(packet_data);
+	network->sendToAll(packet_data, packet_size);
+}
+
+void ServerGame::sendRiftHeadOri(float x, float y, float z) {
+	const unsigned int packet_size = 33 * sizeof(Packet);
+	std::ostringstream ss;
+	ss << "ZZ" << "," << x << "," << y << "," << z;
+	const char * str = ss.str().c_str();
+	char packet_data[packet_size];
+	strcpy(packet_data + 4, str);
+
+	Packet packet;
+	packet.packet_type = RIFT_HEAD_ORI;
 
 	packet.serialize(packet_data);
 	network->sendToAll(packet_data, packet_size);

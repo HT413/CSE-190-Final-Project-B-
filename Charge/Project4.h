@@ -23,6 +23,7 @@ protected:
 };
 
 void updateLeapPos(vec3);
+void updateLeapOri(vec3);
 void createNewUnit(ACTOR_TYPE, int);
 void unitPickup(int);
 void unitPlacedown();
