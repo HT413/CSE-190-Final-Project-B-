@@ -88,7 +88,7 @@ void ServerGame::receiveFromClients()
 
 
 				if (unitValues.size() > 1) {
-					float unitID = stof(unitValues[1]);
+					float unitID = stof(unitValues[2]);
 					cout << "Server received leap pickup ID " << int(unitID) << endl;
 					sendLeapUnitPickup(unitID);
 				}
@@ -121,7 +121,7 @@ void ServerGame::receiveFromClients()
 
 
 				if (unitValues.size() > 1) {
-					float unitID = stof(unitValues[1]);
+					float unitID = stof(unitValues[2]);
 					cout << "Server received rift pickup ID " << int(unitID) << endl;
 					sendRiftUnitPickup(unitID);
 				}
@@ -446,7 +446,7 @@ void ServerGame::sendLeapUnitPickup(float id)
 {
 	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
-	ss << "ZZ" << "," << id;
+	ss << "ZZ" << "," << "1.2345" << "," << id;
 
 	char* cstr = new char[32 * sizeof(Packet)];
 	std::strcpy(cstr, ss.str().c_str());
@@ -467,7 +467,7 @@ void ServerGame::sendRiftUnitPickup(float id)
 	cout << "Sending out unit pickup ID " << id << endl;
 	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
-	ss << "ZZ" << "," << id;
+	ss << "ZZ" << "," << "1.2345" << "," << id;
 
 	char* cstr = new char[32 * sizeof(Packet)];
 	std::strcpy(cstr, ss.str().c_str());

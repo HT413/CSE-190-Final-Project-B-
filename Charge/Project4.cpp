@@ -334,15 +334,21 @@ void unitPickup(int id) {
 	cout << "Object picked up has ID " << objPickup << endl;
 }
 
+bool unitPickedup() {
+	return (objPickup != 0);
+}
+
 void unitPlacedown() {
 	cout << "Object placed down has ID " << objPickup << endl;
 	if (objPickup > 0) {
 		foeActors[objPickup - 2]->toggleActive();
 		foeActors[objPickup - 2]->togglePlacing();
+		foeActors[objPickup - 2]->setPosition(leapHandPos.x, 0, leapHandPos.z);
 	}
 	else {
 		selfActors[-2 - objPickup]->toggleActive();
 		selfActors[-2 - objPickup]->togglePlacing();
+		selfActors[-2 - objPickup]->setPosition(leapHandPos.x, 0, leapHandPos.z);
 	}
 	objPickup = 0;
 }

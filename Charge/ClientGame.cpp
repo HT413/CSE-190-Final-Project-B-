@@ -117,7 +117,7 @@ void ClientGame::sendUnitPickup(float id) {
 	cout << "Unit being picked up has id " << int(id) << endl;
 	const unsigned int packet_size = 33 * sizeof(Packet);
 	std::ostringstream ss;
-	ss << "ZZ" << "," << id;
+	ss << "ZZ" << "," << "1.2345" << "," << id;
 
 	char* cstr = new char[packet_size];
 	std::strcpy(cstr, ss.str().c_str());
@@ -200,6 +200,11 @@ void ClientGame::update()
 
 		case LEAP_UNIT_PICK_UP:
 		{
+			if (unitPickedup()) {
+				i += 32 * sizeof(Packet);
+				break;
+			}
+
 			std::stringstream ss;
 			std::vector<std::string> unitValues;
 			std::string split;
@@ -210,10 +215,10 @@ void ClientGame::update()
 			}
 
 			memcpy(unitInfo, network_data + i, 32 * sizeof(Packet));
-
+			cout << "Unit info " << unitInfo << endl;
 			ss.str(unitInfo);
 			while (std::getline(ss, split, ',')) {
-				if (split.length() > 1) {	//ignore the first nonsense characters
+				if (split.length() > 0) {	//ignore the first nonsense characters
 					unitValues.push_back(split);
 				}
 			}
@@ -221,7 +226,7 @@ void ClientGame::update()
 
 
 			if (unitValues.size() > 1) {
-				int unitID = int(stof(unitValues[1]));
+				int unitID = int(stof(unitValues[2]));
 				unitPickup(unitID);
 			}
 
