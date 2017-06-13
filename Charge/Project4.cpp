@@ -229,7 +229,7 @@ void Project4::initGl() {
 	a2->togglePlacing();
 	foeActors.push_back(a2);
 
-	selfNRG = 1.f;
+	selfNRG = 0.f;
 	lastUpdateTime = lastTime = glfwGetTime();
 
 	// Create the ground
